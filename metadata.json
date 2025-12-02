@@ -1,0 +1,5 @@
+{
+  "name": "FlowBot AI 1.12",
+  "description": "A web application featuring FlowBot AI, a smart chatbot that can operate in AI mode for automated responses or switch to Live Chat mode based on a predefined schedule, allowing human agents to take over.",
+  "requestFramePermissions": []
+}

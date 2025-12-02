@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-g">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FlowBot AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes fadeOut {
+            from { opacity: 1; transform: scale(1); }
+            to { opacity: 0; transform: scale(0.95); }
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+        @keyframes float {
+            0% { box-shadow: 0 5px 15px 0px rgba(0,0,0,0.6); transform: translateY(0px); }
+            50% { box-shadow: 0 25px 15px 0px rgba(0,0,0,0.2); transform: translateY(-10px); }
+            100% { box-shadow: 0 5px 15px 0px rgba(0,0,0,0.6); transform: translateY(0px); }
+        }
+        @keyframes bouncing-dots {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+            100% { transform: translateY(0); }
+        }
+
+        .animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
+        .animate-fadeOut { animation: fadeOut 0.3s ease-in forwards; }
+        .animate-bounce { animation: bounce 1s infinite; }
+        .animate-float { animation: float 3s ease-in-out infinite; }
+        
+        /* --- ANIMATIONS --- */
+        .animation-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; overflow: hidden; z-index: 0;
+        }
+        /* Aurora Circles */
+        .aurora-shape {
+            position: absolute; border-radius: 50%; filter: blur(100px); opacity: var(--animation-opacity, 0.3); animation: aurora-bg 40s infinite linear;
+        }
+        @keyframes aurora-bg { 0% { transform: translate(0, 0) rotate(0deg); } 25% { transform: translate(100px, 80px) rotate(90deg); } 50% { transform: translate(20px, -100px) rotate(180deg); } 75% { transform: translate(-90px, 40px) rotate(270deg); } 100% { transform: translate(0, 0) rotate(360deg); } }
+        /* Light Waves */
+        .wave { background: radial-gradient(circle at 50% 50%, var(--animation-color-1), transparent 70%); position: absolute; border-radius: 45%; animation: wave-effect 15s infinite ease-in-out; opacity: var(--animation-opacity, 0.1); }
+        .wave-1 { width: 400px; height: 400px; top: -150px; left: -100px; animation-delay: 0s; }
+        .wave-2 { width: 500px; height: 500px; bottom: -200px; right: -150px; animation-delay: -5s; }
+        @keyframes wave-effect { 0% { transform: translateX(0) translateY(0) rotate(0); } 50% { transform: translateX(20px) translateY(40px) rotate(180deg); } 100% { transform: translateX(0) translateY(0) rotate(360deg); } }
+        /* Geometric Shapes */
+        .geometric-shape { position: absolute; background-color: var(--animation-color-1); opacity: 0; animation: float-geometric 20s infinite linear; }
+        .shape-1 { width: 80px; height: 80px; top: 10%; left: 15%; border-radius: 50%; animation-delay: 0s; }
+        .shape-2 { width: 120px; height: 120px; top: 70%; left: 80%; border-radius: 10%; animation-delay: 5s; }
+        .shape-3 { width: 50px; height: 50px; top: 40%; left: 50%; animation-delay: 10s; transform: rotate(45deg); }
+        @keyframes float-geometric { 0% { transform: translateY(0) rotate(0deg); opacity: 0; } 25% { opacity: var(--animation-opacity, 0.1); } 50% { transform: translateY(-100px) rotate(180deg); } 75% { opacity: var(--animation-opacity, 0.1); } 100% { transform: translateY(0) rotate(360deg); opacity: 0; } }
+        /* Shifting Gradient */
+        .shifting-gradient-container { background: linear-gradient(-45deg, var(--animation-color-1), var(--animation-color-2), var(--animation-color-3), var(--animation-color-4)); background-size: 400% 400%; animation: gradient-shift 15s ease infinite; opacity: var(--animation-opacity, 0.3); }
+        @keyframes gradient-shift { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+
+        /* Theme Variables */
+        :root {
+            --color-primary: #3b82f6;
+            --color-primary-light: #60a5fa;
+        }
+
+        .theme-dark {
+            --chat-bg: rgba(23, 23, 33, 0.8);
+            --chat-header-bg: rgba(30, 30, 42, 0.5);
+            --chat-footer-bg: rgba(30, 30, 42, 0.5);
+            --chat-input-bg: rgba(55, 55, 75, 0.7);
+            --chat-button-bg: rgba(55, 55, 75, 0.5);
+            --chat-border-color: rgba(255, 255, 255, 0.1);
+            --chat-text-primary: #f3f4f6;
+            --chat-text-secondary: #d1d5db;
+            --chat-text-muted: #9ca3af;
+            --chat-bubble-bot-bg: rgba(45, 45, 60, 0.9);
+            --chat-bubble-user-text: #ffffff;
+            --chat-header-text: #f3f4f6;
+            --animation-opacity: 0.5;
+            --animation-color-1: var(--color-primary);
+            --animation-color-2: var(--color-primary-light);
+            --animation-color-3: #23a6d5;
+            --animation-color-4: #23d5ab;
+        }
+
+        .theme-light {
+            --chat-bg: #ffffff;
+            --chat-header-bg: var(--color-primary);
+            --chat-footer-bg: #f9fafb;
+            --chat-input-bg: #f3f4f6;
+            --chat-button-bg: #e5e7eb;
+            --chat-border-color: #e5e7eb;
+            --chat-text-primary: #111827;
+            --chat-text-secondary: #4b5563;
+            --chat-text-muted: #6b7280;
+            --chat-bubble-bot-bg: #f3f4f6;
+            --chat-bubble-user-text: #ffffff;
+            --chat-header-text: #ffffff;
+            --animation-opacity: 0.2;
+            --animation-color-1: var(--color-primary);
+            --animation-color-2: var(--color-primary-light);
+            --animation-color-3: #a0c4ff;
+            --animation-color-4: #bde0fe;
+        }
+    </style>
+    <script type="importmap">
+{
+  "imports": {
+    "react": "https://aistudiocdn.com/react@^19.1.1",
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.1.1/",
+    "react/": "https://aistudiocdn.com/react@^19.1.1/",
+    "@google/genai": "https://aistudiocdn.com/@google/genai@^1.19.0",
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js",
+    "firebase/auth": "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js",
+    "firebase/": "https://aistudiocdn.com/firebase@^12.5.0/",
+    "pdfjs-dist": "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.min.mjs",
+    "pdfjs-dist/build/pdf.worker.min.mjs": "https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.worker.min.mjs",
+    "react-markdown": "https://aistudiocdn.com/react-markdown@^10.1.0",
+    "tty": "https://aistudiocdn.com/tty@^1.0.1"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+<body class="bg-[#141414]">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+</body>
+</html>
