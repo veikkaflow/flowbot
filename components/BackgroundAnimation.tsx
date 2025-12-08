@@ -1,19 +1,40 @@
 // components/BackgroundAnimation.tsx
-import React from 'react';
+import React, { useMemo } from 'react';
 import { BackgroundAnimation as AnimationType } from '../types.ts';
 
 interface BackgroundAnimationProps {
     animation: AnimationType;
 }
 
+// Staattinen taulukko particles-animaatiolle - luodaan vain kerran
+const PARTICLES_COUNT = 20;
+const PARTICLES_ARRAY = Array.from({ length: PARTICLES_COUNT });
+
 const BackgroundAnimation: React.FC<BackgroundAnimationProps> = ({ animation }) => {
+    // Memoize container style - luodaan uudelleen vain jos animation muuttuu
+    const animationContainerStyle = useMemo(() => ({
+        '--animation-opacity': 0.15
+    } as React.CSSProperties), []);
+
+    // Memoize particles-elementit - lasketaan uudelleen vain jos animation muuttuu
+    const particlesElements = useMemo(() => {
+        if (animation !== 'particles') return null;
+        return PARTICLES_ARRAY.map((_, i) => (
+            <div 
+                key={i} 
+                className="particle" 
+                style={{ 
+                    left: `${(i * 5) % 100}%`,
+                    animationDelay: `${i * 0.5}s`,
+                    animationDuration: `${15 + (i % 10)}s`
+                }}
+            ></div>
+        ));
+    }, [animation]);
+
     if (animation === 'none' || !animation) {
         return null;
     }
-
-    const animationContainerStyle = {
-        '--animation-opacity': 0.15
-    } as React.CSSProperties;
 
     return (
         <div className="animation-container" style={animationContainerStyle}>
@@ -40,8 +61,20 @@ const BackgroundAnimation: React.FC<BackgroundAnimationProps> = ({ animation }) 
             {animation === 'gradient' && (
                 <div className="shifting-gradient-container w-full h-full"></div>
             )}
+            {animation === 'particles' && particlesElements}
+            {animation === 'pulse' && (
+                <>
+                    <div className="pulse-ring pulse-ring-1"></div>
+                    <div className="pulse-ring pulse-ring-2"></div>
+                    <div className="pulse-ring pulse-ring-3"></div>
+                </>
+            )}
+            {animation === 'mesh' && (
+                <div className="mesh-grid"></div>
+            )}
         </div>
     );
 };
 
-export default BackgroundAnimation;
+// Memoize komponentti - renderöidään uudelleen vain jos animation prop muuttuu
+export default React.memo(BackgroundAnimation);

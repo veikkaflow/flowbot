@@ -50,13 +50,16 @@ const AdminView: React.FC = () => {
     };
 
     return (
-        <div className="flex h-full bg-gray-900 rounded-lg -m-6">
+        <div className="flex h-full rounded-lg -m-6" style={{ backgroundColor: 'var(--admin-card-bg, #1f2937)' }}>
             <div 
                 onMouseEnter={() => setIsSidebarCollapsed(false)} 
                 onMouseLeave={() => setIsSidebarCollapsed(true)}
                 className="flex-shrink-0"
             >
-                <aside className={`h-full bg-gray-800 p-4 border-r border-gray-700 transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'w-20' : 'w-64'}`}>
+                <aside className={`h-full p-4 border-r transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'w-20' : 'w-64'}`} style={{
+                    backgroundColor: 'var(--admin-sidebar-bg, #1f2937)',
+                    borderColor: 'var(--admin-border, #374151)'
+                }}>
                     <ViewSwitcher 
                         views={views} 
                         currentView={currentView} 

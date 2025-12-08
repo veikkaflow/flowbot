@@ -42,8 +42,8 @@ const InboxDashboard: React.FC = () => {
     
     if (!activeBot || !activeBot.settings || !activeBot.settings.avatarSettings) {
         return (
-            <div className="h-full flex items-center justify-center bg-gray-900">
-                <Loader className="w-8 h-8 animate-spin text-gray-500"/>
+            <div className="h-full flex items-center justify-center" style={{ backgroundColor: 'var(--admin-card-bg, #1f2937)' }}>
+                <Loader className="w-8 h-8 animate-spin" style={{ color: 'var(--admin-text-muted, #9ca3af)' }}/>
             </div>
         );
     }
@@ -67,9 +67,12 @@ const InboxDashboard: React.FC = () => {
                         onSendMessage={handleSendMessage}
                     />
                 ) : (
-                    <div className="h-full flex flex-col items-center justify-center bg-gray-900 text-gray-500">
+                    <div className="h-full flex flex-col items-center justify-center" style={{
+                        backgroundColor: 'var(--admin-card-bg, #1f2937)',
+                        color: 'var(--admin-text-muted, #9ca3af)'
+                    }}>
                         <Mail className="w-16 h-16 mb-4" />
-                        <h3 className="text-xl font-semibold">{t('inbox.select_conversation')}</h3>
+                        <h3 className="text-xl font-semibold" style={{ color: 'var(--admin-text-primary, #f3f4f6)' }}>{t('inbox.select_conversation')}</h3>
                         <p>{t('inbox.select_desc')}</p>
                     </div>
                 )}

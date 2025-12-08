@@ -75,7 +75,7 @@ export interface AppSettings {
     userManagement: UserManagementSettings;
 }
 
-export type BackgroundAnimation = 'none' | 'aurora' | 'waves' | 'geometric' | 'gradient';
+export type BackgroundAnimation = 'none' | 'aurora' | 'waves' | 'geometric' | 'gradient' | 'clearwaves' | 'particles' | 'pulse' | 'mesh';
 
 export interface AppearanceSettings {
     brandName: string;
@@ -152,14 +152,16 @@ export interface KnowledgeSource {
     type: 'file' | 'url' | 'qna';
     name: string;
     content: string;
+    fileUrl?: string; // URL to the original file in storage (for PDFs)
 }
 
 // User Management
 export interface User {
     uid: string;
     email: string;
-    role: 'admin' | 'agent' | 'viewer';
+    role: 'superadmin' | 'admin' | 'agent' | 'viewer';
     name: string;
+    allowedBotIds?: string[]; // Bot IDs that this user can access (admin can manage)
 }
 
 export interface UserManagementSettings {

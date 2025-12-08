@@ -6,15 +6,17 @@ import AdminView from './AdminView.tsx';
 import CustomerView from './CustomerView.tsx';
 import SimulationControls from './SimulationControls.tsx';
 import LanguageSelector from './LanguageSelector.tsx';
+import ThemeSelector from './ThemeSelector.tsx';
 import { useBotContext } from '../context/BotContext.tsx';
 import { generateId } from '../utils/id.ts';
 import BackgroundAnimation from './BackgroundAnimation.tsx';
 
 interface MainLayoutProps {
   onLogout: () => void;
+  isAdmin?: boolean;
 }
 
-const MainLayout: React.FC<MainLayoutProps> = ({ onLogout }) => {
+const MainLayout: React.FC<MainLayoutProps> = ({ onLogout, isAdmin = false }) => {
     const [layoutView, setLayoutView] = useState<LayoutView>('split');
     // We reuse the 'simulations' state to track all open chat windows (both sim and live)
     const [simulations, setSimulations] = useState<string[]>(['sim_visitor_main']);
@@ -44,21 +46,35 @@ const MainLayout: React.FC<MainLayoutProps> = ({ onLogout }) => {
         setSimulationSizes(prev => ({ ...prev, [visitorId]: size }));
     };
 
-    if (!activeBot) {
+    // For non-admin users, activeBot is required
+    if (!isAdmin && !activeBot) {
         return null; // Or a loading state
     }
+    
+    // For admin users, if no active bot is set, wait for App.tsx to set it
+    if (isAdmin && !activeBot) {
+        return null; // Will be handled by App.tsx
+    }
 
-    const primaryColorStyle = {
+    const primaryColorStyle = activeBot ? {
         '--color-primary': activeBot.settings.appearance.primaryColor,
-    } as React.CSSProperties;
+    } as React.CSSProperties : {} as React.CSSProperties;
 
     return (
-        <div className="flex flex-col h-screen bg-[#141414] text-white relative" style={primaryColorStyle}>
-            <BackgroundAnimation animation={activeBot.settings.appearance.backgroundAnimation} />
-            <header className="flex-shrink-0 flex items-center justify-between p-4 bg-gray-800/80 backdrop-blur-sm border-b border-gray-700 z-30 gap-4">
+        <div className="flex flex-col h-screen relative" style={{ 
+            backgroundColor: 'var(--admin-bg, #141414)',
+            color: 'var(--admin-text-primary, #f3f4f6)',
+            ...primaryColorStyle 
+        }}>
+            <BackgroundAnimation animation={activeBot?.settings.appearance.backgroundAnimation} />
+            <header className="flex-shrink-0 flex items-center justify-between p-4 backdrop-blur-sm border-b z-30 gap-4" style={{
+                backgroundColor: 'var(--admin-header-bg, rgba(31, 41, 55, 0.8))',
+                borderColor: 'var(--admin-border, #374151)'
+            }}>
                 <div className="flex items-center gap-4">
                     <BotSelector onLogout={onLogout} />
                     <LanguageSelector />
+                    <ThemeSelector />
                 </div>
                 <div className="flex items-center gap-4">
                     <TopLevelViewSwitcher currentView={layoutView} onSwitchView={setLayoutView} />

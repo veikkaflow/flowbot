@@ -1,4 +1,6 @@
 import { ScrapedData } from '../types.ts';
+import { functions } from './firebase.ts';
+import { httpsCallable } from 'firebase/functions';
 
 const toAbsoluteUrl = (baseUrl: string, relativeUrl: string): string => {
   try {
@@ -53,48 +55,65 @@ const getMockHtmlForUrl = (url: string): { html: string, title: string, text: st
     };
 }
 
-
+/**
+ * Scrapes a website using Firebase Cloud Function
+ * Falls back to mock data if function is not available or fails
+ */
 export const scrapeSite = async (url: string): Promise<ScrapedData> => {
-    console.log(`Simulating advanced scraping for: ${url}`);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    if (url.includes("fail")) {
-        throw new Error("Sivuston analysointi epäonnistui. Palvelin ei vastannut.");
-    }
-    
-    const { html: mockHtmlContent, title, text } = getMockHtmlForUrl(url);
-    const foundLogos = new Set<string>();
-
-    const imgRegex = /<img[^>]+src="([^">]+)"[^>]*>/g;
-    let match;
-    while ((match = imgRegex.exec(mockHtmlContent)) !== null) {
-      const src = match[1];
-      const fullTag = match[0].toLowerCase();
-      const isLikelyLogo = fullTag.includes('logo') || src.includes('logo');
-      if (isLikelyLogo) {
-        const absoluteUrl = toAbsoluteUrl(url, src);
-        if (absoluteUrl) foundLogos.add(absoluteUrl);
-      }
-    }
-    
-    const faviconRegex = /<link[^>]+rel="[^"]*icon[^"]*"[^>]+href="([^">]+)"/g;
-    const faviconMatch = faviconRegex.exec(mockHtmlContent);
-    if (faviconMatch) {
-      const absoluteUrl = toAbsoluteUrl(url, faviconMatch[1]);
-      if(absoluteUrl) foundLogos.add(absoluteUrl);
-    }
+    console.log(`Scraping website: ${url}`);
     
     try {
-        const hostname = new URL(url).hostname;
-        foundLogos.add(`https://logo.clearbit.com/${hostname}`);
-    } catch(e) { /* ignore invalid URLs */ }
+        // Try to use Firebase Cloud Function
+        const scrapeWebsite = httpsCallable(functions, 'scrapeWebsite');
+        const result = await scrapeWebsite({ url });
+        const data = result.data as ScrapedData;
+        
+        console.log('Successfully scraped website via Cloud Function');
+        return data;
+    } catch (error: any) {
+        console.warn('Cloud Function scraping failed, falling back to mock data:', error.message);
+        
+        // Fallback to mock data
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
-    return {
-        title: title,
-        text: text,
-        logos: Array.from(foundLogos),
-        colors: [ '#4f46e5', '#1f2937', '#3b82f6', '#10b981', '#f59e0b' ],
-    };
+        if (url.includes("fail")) {
+            throw new Error("Sivuston analysointi epäonnistui. Palvelin ei vastannut.");
+        }
+        
+        const { html: mockHtmlContent, title, text } = getMockHtmlForUrl(url);
+        const foundLogos = new Set<string>();
+
+        const imgRegex = /<img[^>]+src="([^">]+)"[^>]*>/g;
+        let match;
+        while ((match = imgRegex.exec(mockHtmlContent)) !== null) {
+          const src = match[1];
+          const fullTag = match[0].toLowerCase();
+          const isLikelyLogo = fullTag.includes('logo') || src.includes('logo');
+          if (isLikelyLogo) {
+            const absoluteUrl = toAbsoluteUrl(url, src);
+            if (absoluteUrl) foundLogos.add(absoluteUrl);
+          }
+        }
+        
+        const faviconRegex = /<link[^>]+rel="[^"]*icon[^"]*"[^>]+href="([^">]+)"/g;
+        const faviconMatch = faviconRegex.exec(mockHtmlContent);
+        if (faviconMatch) {
+          const absoluteUrl = toAbsoluteUrl(url, faviconMatch[1]);
+          if(absoluteUrl) foundLogos.add(absoluteUrl);
+        }
+        
+        try {
+            const hostname = new URL(url).hostname;
+            foundLogos.add(`https://logo.clearbit.com/${hostname}`);
+        } catch(e) { /* ignore invalid URLs */ }
+
+        return {
+            title: title,
+            text: text,
+            logos: Array.from(foundLogos),
+            colors: [ '#4f46e5', '#1f2937', '#3b82f6', '#10b981', '#f59e0b' ],
+        };
+    }
 };
 
 export const scrapeTextFromUrl = async (url: string): Promise<string> => {

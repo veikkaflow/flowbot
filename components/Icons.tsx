@@ -23,6 +23,8 @@ export const Palette = createIcon("M13.5 6.5L17.5 2.5C18.428 1.571 20.286 1.571 
 export const LayoutColumns = createIcon("M12 3h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7m0-18H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h7m0-18v18");
 export const Monitor = createIcon("M8 17h8v4H8zM4 4h16v9H4z");
 export const ChevronsUpDown = createIcon("M7 15l5 5 5-5M7 9l5-5 5 5");
+export const ChevronDown = createIcon("M6 9l6 6 6-6");
+export const ChevronUp = createIcon("M18 15l-6-6-6 6");
 export const LogOut = createIcon("M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4m7 14l5-5-5-5m5 5H9");
 export const Check = createIcon("M20 6L9 17l-5-5");
 export const Home = createIcon("M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z");
@@ -52,6 +54,8 @@ export const Briefcase = createIcon("M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16m
 export const Image = createIcon("M5 3a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2H5zm14 15H5.01L5 5h14v13zM9 10a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm-2 4l3-3 5 5h-8l3-3z");
 export const List = createIcon("M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01");
 export const ExternalLink = createIcon("M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3");
+export const Sun = createIcon("M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0z");
+export const Moon = createIcon("M20.354 15.354A9 9 0 0 1 8.646 3.646 9.003 9.003 0 0 0 12 21a9.003 9.003 0 0 0 8.354-5.646z");
 
 // Special BrandLogo component
 export const BrandLogo: React.FC<{ logoUrl?: string; className?: string }> = ({ logoUrl, className }) => {

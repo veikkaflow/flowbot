@@ -20,16 +20,26 @@ const TopLevelViewSwitcher: React.FC<TopLevelViewSwitcherProps> = ({ currentView
   ];
 
   return (
-    <div className="flex items-center space-x-2 bg-gray-900 p-1 rounded-lg">
+    <div className="flex items-center space-x-2 p-1 rounded-lg" style={{ backgroundColor: 'var(--admin-card-bg, #1f2937)' }}>
       {views.map((view) => (
         <button
           key={view.id}
           onClick={() => onSwitchView(view.id)}
-          className={`flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            currentView === view.id
-              ? 'bg-[var(--color-primary)] text-black'
-              : 'text-gray-300 hover:bg-gray-700'
-          }`}
+          className="flex items-center space-x-2 px-4 py-2 rounded-md text-sm font-medium transition-colors"
+          style={{
+            backgroundColor: currentView === view.id ? 'var(--color-primary)' : 'transparent',
+            color: currentView === view.id ? 'black' : 'var(--admin-text-secondary, #d1d5db)'
+          }}
+          onMouseEnter={(e) => {
+            if (currentView !== view.id) {
+              e.currentTarget.style.backgroundColor = 'var(--admin-card-bg, #374151)';
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (currentView !== view.id) {
+              e.currentTarget.style.backgroundColor = 'transparent';
+            }
+          }}
         >
           <view.icon className="w-5 h-5" />
           <span className="hidden xl:inline">{view.name}</span>

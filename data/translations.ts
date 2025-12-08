@@ -31,6 +31,8 @@ export const translations = {
         'dash.action.agents': 'Hallinnoi agentteja',
         'dash.action.agents_desc': 'Lisää ja muokkaa live-chat agentteja.',
         'dash.new_badge': 'Uusi',
+        'dash.action.create_new_bot': 'Luo uusi botti',
+        'dash.action.create_new_bot_desc': 'Alusta uusi botti hallintaasi.',
 
         // Inbox
         'inbox.title': 'Postilaatikko',
@@ -82,7 +84,11 @@ export const translations = {
         'appr.anim_none': 'Ei mitään',
         'appr.anim_aurora': 'Revontulet',
         'appr.anim_waves': 'Aallot',
+        'appr.anim_geometric': 'Geometrinen',
         'appr.anim_gradient': 'Liukuväri',
+        'appr.anim_particles': 'Hiukkaset',
+        'appr.anim_pulse': 'Pulssi',
+        'appr.anim_mesh': 'Verkko',
         'appr.theme': 'Teema',
         'appr.theme_light': 'Vaalea',
         'appr.theme_dark': 'Tumma',
@@ -258,6 +264,8 @@ export const translations = {
         'dash.action.agents': 'Manage Agents',
         'dash.action.agents_desc': 'Add and edit live chat agents.',
         'dash.new_badge': 'New',
+        'dash.action.create_new_bot': 'Create New Bot',
+        'dash.action.create_new_bot_desc': 'Configure a new bot.',
 
         // Inbox
         'inbox.title': 'Inbox',
@@ -309,7 +317,11 @@ export const translations = {
         'appr.anim_none': 'None',
         'appr.anim_aurora': 'Aurora',
         'appr.anim_waves': 'Waves',
+        'appr.anim_geometric': 'Geometric',
         'appr.anim_gradient': 'Gradient',
+        'appr.anim_particles': 'Particles',
+        'appr.anim_pulse': 'Pulse',
+        'appr.anim_mesh': 'Mesh',
         'appr.theme': 'Theme',
         'appr.theme_light': 'Light',
         'appr.theme_dark': 'Dark',
