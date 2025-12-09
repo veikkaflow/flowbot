@@ -118,6 +118,7 @@ export interface BehaviorSettings {
     showContactButton: boolean;
     showQuoteButton: boolean;
     language: 'fi' | 'en'; // Added Bot Language Setting
+    helpText?: string; // Custom help text that users can write
 }
 
 export interface DailySchedule {

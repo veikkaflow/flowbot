@@ -24,6 +24,14 @@ service cloud.firestore {
              resource.data.ownerId == request.auth.uid;
     }
     
+    // Helper function to check if user has access to bot via allowedBotIds
+    function hasBotAccess(botId) {
+      return request.auth != null &&
+             exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.allowedBotIds != null &&
+             botId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.allowedBotIds;
+    }
+    
     // Bots collection rules
     match /bots/{botId} {
       // Allow read if user is admin or owns the bot
@@ -39,10 +47,11 @@ service cloud.firestore {
       allow create: if request.auth != null && 
                       request.resource.data.ownerId == request.auth.uid;
       
-      // Allow update if user is admin or owns the bot
+      // Allow update if user is admin, owns the bot, or has access via allowedBotIds
       allow update: if request.auth != null && (
         isAdmin() ||
-        isBotOwner(botId)
+        isBotOwner(botId) ||
+        hasBotAccess(botId)
       );
       
       // Allow delete if user is admin or owns the bot
@@ -95,12 +104,17 @@ service cloud.firestore {
       // Allow create if user is authenticated
       allow create: if request.auth != null;
       
-      // Allow update if user is admin or conversation belongs to user's bot
+      // Allow update if user is admin, owns the bot, or has access via allowedBotIds
       allow update: if request.auth != null && (
         isAdmin() ||
         (resource.data.botId != null &&
          exists(/databases/$(database)/documents/bots/$(resource.data.botId)) &&
-         get(/databases/$(database)/documents/bots/$(resource.data.botId)).data.ownerId == request.auth.uid)
+         (
+           get(/databases/$(database)/documents/bots/$(resource.data.botId)).data.ownerId == request.auth.uid ||
+           (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+            resource.data.botId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.allowedBotIds)
+         )
+        )
       );
       
       // Allow delete if user is admin
@@ -129,11 +143,37 @@ service cloud.firestore {
       // Allow create if user is authenticated
       allow create: if request.auth != null;
       
-      // Allow update if user is admin
-      allow update: if request.auth != null && isAdmin();
+      // Allow update if user is admin or has access to the bot via allowedBotIds
+      allow update: if request.auth != null && (
+        isAdmin() ||
+        (exists(/databases/$(database)/documents/conversations/$(conversationId)) &&
+         get(/databases/$(database)/documents/conversations/$(conversationId)).data.botId != null &&
+         (
+           exists(/databases/$(database)/documents/bots/$(get(/databases/$(database)/documents/conversations/$(conversationId)).data.botId)) &&
+           (
+             get(/databases/$(database)/documents/bots/$(get(/databases/$(database)/documents/conversations/$(conversationId)).data.botId)).data.ownerId == request.auth.uid ||
+             (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+              get(/databases/$(database)/documents/conversations/$(conversationId)).data.botId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.allowedBotIds)
+           )
+         )
+        )
+      );
       
-      // Allow delete if user is admin
-      allow delete: if request.auth != null && isAdmin();
+      // Allow delete if user is admin or has access to the bot via allowedBotIds
+      allow delete: if request.auth != null && (
+        isAdmin() ||
+        (exists(/databases/$(database)/documents/conversations/$(conversationId)) &&
+         get(/databases/$(database)/documents/conversations/$(conversationId)).data.botId != null &&
+         (
+           exists(/databases/$(database)/documents/bots/$(get(/databases/$(database)/documents/conversations/$(conversationId)).data.botId)) &&
+           (
+             get(/databases/$(database)/documents/bots/$(get(/databases/$(database)/documents/conversations/$(conversationId)).data.botId)).data.ownerId == request.auth.uid ||
+             (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+              get(/databases/$(database)/documents/conversations/$(conversationId)).data.botId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.allowedBotIds)
+           )
+         )
+        )
+      );
     }
   }
 }

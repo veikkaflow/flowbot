@@ -7,7 +7,7 @@ import { useConversationContext } from '../context/ConversationContext.tsx';
 import { useChat } from '../hooks/useChat.ts';
 import { useScheduler } from '../hooks/useScheduler.ts';
 import { MessageBubble } from './MessageBubble.tsx';
-import { Send, X, RefreshCcw, MessageSquare, ArrowDown, ChevronsUpDown, User, Mail, Briefcase, ArrowLeft } from './Icons.tsx';
+import { Send, X, RefreshCcw, MessageSquare, ArrowDown, ChevronsUpDown, User, Mail, Briefcase, ArrowLeft, Settings, HelpCircle, Cog } from './Icons.tsx';
 import { IconName, Conversation, Message } from '../types.ts';
 import * as Icons from './Icons.tsx';
 import BackgroundAnimation from './BackgroundAnimation.tsx';
@@ -22,7 +22,7 @@ interface ChatWidgetProps {
     visitorId: string;
 }
 
-type ActiveView = 'chat' | 'contact' | 'quote' | 'editName';
+type ActiveView = 'chat' | 'contact' | 'quote' | 'editName' | 'help';
 
 const getIconComponent = (iconName: IconName): React.FC<React.SVGProps<SVGSVGElement>> => {
     return Icons[iconName] || Icons.HelpCircle;
@@ -62,7 +62,9 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ visitorId }) => {
     const [chatSize, setChatSize] = useState<'medium' | 'large' | 'small'>('medium');
     const [activeView, setActiveView] = useState<ActiveView>('chat');
     const [newName, setNewName] = useState('');
+    const [showSettingsMenu, setShowSettingsMenu] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const settingsMenuRef = useRef<HTMLDivElement>(null);
     
     useEffect(() => {
         let isMounted = true;
@@ -82,7 +84,42 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ visitorId }) => {
     useEffect(() => {
         // Reset to chat view when conversation changes
         setActiveView('chat');
+        setShowSettingsMenu(false); // Sulje dropdown-valikko kun keskustelu vaihtuu
     }, [conversationFromContext?.id]);
+
+    // Sulje dropdown-valikko kun klikataan sen ulkopuolelle
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (settingsMenuRef.current && !settingsMenuRef.current.contains(event.target as Node)) {
+                setShowSettingsMenu(false);
+            }
+        };
+
+        if (showSettingsMenu) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showSettingsMenu]);
+
+    // Sulje dropdown-valikko kun klikataan sen ulkopuolelle
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (settingsMenuRef.current && !settingsMenuRef.current.contains(event.target as Node)) {
+                setShowSettingsMenu(false);
+            }
+        };
+
+        if (showSettingsMenu) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showSettingsMenu]);
 
 
     if (!activeBot || !activeBot.settings.schedule) return null;
@@ -223,7 +260,49 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ visitorId }) => {
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <button onClick={toggleChatSize} title="Vaihda kokoa" className="p-1.5 text-current/80 hover:text-current"><ChevronsUpDown className="w-5 h-5"/></button>
-                                    <button onClick={confirmAndStartNewConversation} title={tBot('chat.start_new')} className="p-1.5 text-current/80 hover:text-current"><RefreshCcw className="w-5 h-5"/></button>
+                                    <div className="relative" ref={settingsMenuRef}>
+                                        <button 
+                                            onClick={() => setShowSettingsMenu(!showSettingsMenu)} 
+                                            title="Asetukset" 
+                                            className={`p-1.5 rounded-md transition-all ${showSettingsMenu ? 'bg-[var(--chat-input-bg)] text-current' : 'text-current/80 hover:text-current'}`}
+                                        >
+                                            <Cog className="w-5 h-5"/>
+                                        </button>
+                                        {showSettingsMenu && (
+                                            <div className="absolute right-0 mt-2 w-48 bg-[var(--chat-bg)] border border-[var(--chat-border-color)] rounded-lg shadow-lg z-50 overflow-hidden">
+                                                <button
+                                                    onClick={() => {
+                                                        setShowSettingsMenu(false);
+                                                        confirmAndStartNewConversation();
+                                                    }}
+                                                    className="w-full text-left px-4 py-2 text-sm text-[var(--chat-text-primary)] hover:bg-[var(--chat-input-bg)] flex items-center gap-2"
+                                                >
+                                                    <RefreshCcw className="w-4 h-4" />
+                                                    {tBot('chat.start_new')}
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        setShowSettingsMenu(false);
+                                                        setActiveView('help');
+                                                    }}
+                                                    className="w-full text-left px-4 py-2 text-sm text-[var(--chat-text-primary)] hover:bg-[var(--chat-input-bg)] flex items-center gap-2"
+                                                >
+                                                    <HelpCircle className="w-4 h-4" />
+                                                    Ohjeet
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        setShowSettingsMenu(false);
+                                                        setActiveView('editName');
+                                                    }}
+                                                    className="w-full text-left px-4 py-2 text-sm text-[var(--chat-text-primary)] hover:bg-[var(--chat-input-bg)] flex items-center gap-2"
+                                                >
+                                                    <User className="w-4 h-4" />
+                                                    Vaihda nimi
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
                                     <button onClick={() => setIsOpen(false)} title="Pienennä" className="p-1.5 text-current/80 hover:text-current"><ArrowDown className="w-5 h-5"/></button>
                                 </div>
                             </header>
@@ -274,6 +353,51 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ visitorId }) => {
                                                 {tBot('chat.save')}
                                             </button>
                                         </form>
+                                    </div>
+                                ) : activeView === 'help' ? (
+                                    <div className="p-4 h-full flex flex-col overflow-y-auto">
+                                        <div className="flex items-center gap-2 mb-4">
+                                            <button onClick={() => setActiveView('chat')} className="text-[var(--chat-text-secondary)] hover:text-[var(--chat-text-primary)] p-1 rounded-full">
+                                                <ArrowLeft className="w-5 h-5" />
+                                            </button>
+                                            <h3 className="text-lg font-semibold text-[var(--chat-text-primary)]">Ohjeet</h3>
+                                        </div>
+                                        <div className="space-y-4 text-[var(--chat-text-primary)]">
+                                            {behavior.helpText ? (
+                                                <div className="whitespace-pre-wrap text-sm text-[var(--chat-text-secondary)]">
+                                                    {behavior.helpText}
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <div>
+                                                        <h4 className="font-semibold mb-2">Miten käytän chattia?</h4>
+                                                        <p className="text-sm text-[var(--chat-text-secondary)]">
+                                                            Voit kirjoittaa viestejä chat-ikkunaan ja saada automaattisia vastauksia. 
+                                                            Jos tarvitset lisäapua, voit pyytää yhdistämään sinut asiakaspalvelijaan.
+                                                        </p>
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-semibold mb-2">Miten aloitan uuden keskustelun?</h4>
+                                                        <p className="text-sm text-[var(--chat-text-secondary)]">
+                                                            Klikkaa asetukset-ikonia ja valitse "Aloita uusi keskustelu" aloittaaksesi uuden keskustelun.
+                                                        </p>
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-semibold mb-2">Miten vaihdan nimeni?</h4>
+                                                        <p className="text-sm text-[var(--chat-text-secondary)]">
+                                                            Klikkaa asetukset-ikonia ja valitse "Vaihda nimi" muuttaaksesi nimesi chattiin.
+                                                        </p>
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="font-semibold mb-2">Miten saan apua?</h4>
+                                                        <p className="text-sm text-[var(--chat-text-secondary)]">
+                                                            Jos et löydä vastausta kysymykseesi, voit pyytää yhdistämään sinut asiakaspalvelijaan 
+                                                            tai lähettää yhteydenottopyynnön.
+                                                        </p>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
                                     </div>
                                 ) : (
                                     <>
@@ -343,11 +467,6 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ visitorId }) => {
                                                     disabled={isAgentsOnlyOffline}
                                                     className="w-full text-sm px-4 py-2 bg-[var(--chat-input-bg)] text-[var(--chat-text-primary)] border border-[var(--chat-border-color)] rounded-full focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] placeholder-[var(--chat-text-muted)]"
                                                 />
-                                                {behavior.allowNameChange && (
-                                                    <button type="button" onClick={handleNameChange} title={tBot('chat.name_change_title')} className="p-2 text-gray-400 rounded-full hover:bg-gray-200 hover:text-gray-600">
-                                                        <User className="w-5 h-5"/>
-                                                    </button>
-                                                )}
                                                 <button type="submit" disabled={!input.trim() || isLoading || isAgentsOnlyOffline} className="p-2.5 text-white rounded-full disabled:opacity-50" style={{ backgroundColor: 'var(--color-primary)'}}>
                                                     <Send className="w-5 h-5"/>
                                                 </button>

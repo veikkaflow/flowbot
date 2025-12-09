@@ -4,6 +4,7 @@ import { useSettings } from '../hooks/useSettings.ts';
 import { DailySchedule } from '../types.ts';
 import { Calendar } from './Icons.tsx';
 import { useLanguage } from '../context/LanguageContext.tsx';
+import { useDebouncedSave } from '../hooks/useDebouncedSave.ts';
 
 const daysOfWeek = [
     { index: 1, name: 'Maanantai' },
@@ -18,6 +19,12 @@ const daysOfWeek = [
 const ScheduleSettings: React.FC = () => {
     const { settings: schedule, setSettings } = useSettings('schedule');
     const { t } = useLanguage();
+
+    // Debounced save for offline message
+    const [offlineMessage, setOfflineMessage, isSavingOffline] = useDebouncedSave(
+        schedule?.offlineMessage,
+        (value) => setSettings({ ...schedule!, offlineMessage: value })
+    );
 
     if (!schedule) return null;
 
@@ -37,9 +44,6 @@ const ScheduleSettings: React.FC = () => {
         setSettings({ ...schedule, dailySchedules: newSchedules });
     };
 
-    const handleOfflineMessageChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        setSettings({ ...schedule, offlineMessage: e.target.value });
-    };
 
     return (
         <div className="space-y-6 animate-[fadeIn_0.3s_ease-out]">
@@ -130,8 +134,8 @@ const ScheduleSettings: React.FC = () => {
                     <textarea
                         id="offlineMessage"
                         rows={3}
-                        value={schedule.offlineMessage}
-                        onChange={handleOfflineMessageChange}
+                        value={offlineMessage}
+                        onChange={e => setOfflineMessage(e.target.value)}
                         className="w-full px-3 py-2 rounded-md border"
                         placeholder="Kiitos viestistäsi! Palaamme asiaan mahdollisimman pian."
                         style={{

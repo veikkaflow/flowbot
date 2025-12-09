@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Lock, Mail } from './Icons.tsx';
 import { BrandLogo } from './Icons.tsx';
-import { auth } from '../services/firebase.ts';
+import { auth, db } from '../services/firebase.ts';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
+import { doc, setDoc, getDoc } from 'firebase/firestore';
 
 interface LoginScreenProps {
   logoUrl: string;
@@ -44,6 +45,30 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ logoUrl }) => {
     } else {
       // Sign-up logic
       createUserWithEmailAndPassword(auth, email, password)
+        .then(async (userCredential) => {
+          // Käyttäjä luotiin onnistuneesti Firebase Authiin
+          const user = userCredential.user;
+          
+          // Luo täysi käyttäjädokumentti Firestoreen
+          try {
+            const userRef = doc(db, 'users', user.uid);
+            const userDoc = await getDoc(userRef);
+            
+            // Varmista että dokumentti ei ole jo olemassa
+            if (!userDoc.exists()) {
+              await setDoc(userRef, {
+                email: email,
+                role: 'agent', // Oletusrooli uusille käyttäjille
+                name: email.split('@')[0], // Nimi sähköpostin ensimmäisestä osasta
+                allowedBotIds: [],
+              });
+              console.log('Käyttäjädokumentti luotu Firestoreen');
+            }
+          } catch (error) {
+            console.error('Virhe käyttäjädokumentin luomisessa:', error);
+            // Älä keskeytä kirjautumista vaikka dokumentin luonti epäonnistuisi
+          }
+        })
         .catch((error) => {
           console.error("Signup error:", error);
           if (error.code === 'auth/email-already-in-use') {

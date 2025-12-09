@@ -1,11 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAgents } from '../hooks/useAgents.ts';
 import { useSettings } from '../hooks/useSettings.ts';
 import { Agent } from '../types.ts';
 import { Users, Plus, Trash2, Edit2 } from './Icons.tsx';
 import AvatarEditModal from './AvatarEditModal.tsx';
 import { useLanguage } from '../context/LanguageContext.tsx';
+import { useImmediateSave } from '../hooks/useDebouncedSave.ts';
 
 const AgentSettings: React.FC = () => {
     const { agents, addAgent, updateAgent, deleteAgent } = useAgents();
@@ -13,6 +14,45 @@ const AgentSettings: React.FC = () => {
     const { t } = useLanguage();
 
     const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
+    const [localAgents, setLocalAgents] = useState<Agent[]>(agents || []);
+    const agentTimeouts = React.useRef<Map<string, NodeJS.Timeout>>(new Map());
+
+    // Sync local state when agents change
+    useEffect(() => {
+        setLocalAgents(agents || []);
+    }, [agents]);
+
+    // Cleanup timeouts on unmount
+    useEffect(() => {
+        return () => {
+            agentTimeouts.current.forEach(timeout => clearTimeout(timeout));
+        };
+    }, []);
+
+    const handleAgentNameChange = (id: string, value: string) => {
+        // Update local state immediately
+        setLocalAgents(prev => {
+            const updated = prev.map(a => a.id === id ? { ...a, name: value } : a);
+            
+            // Clear existing timeout
+            const existingTimeout = agentTimeouts.current.get(id);
+            if (existingTimeout) {
+                clearTimeout(existingTimeout);
+            }
+
+            // Set new timeout
+            const timeout = setTimeout(() => {
+                const agent = updated.find(a => a.id === id);
+                if (agent) {
+                    updateAgent({ ...agent, name: value });
+                }
+                agentTimeouts.current.delete(id);
+            }, 1000);
+
+            agentTimeouts.current.set(id, timeout);
+            return updated;
+        });
+    };
 
     if (agents === undefined || agentsEnabled === undefined) return null;
 
@@ -70,7 +110,7 @@ const AgentSettings: React.FC = () => {
                     </button>
                 </div>
                 <div className="space-y-3">
-                    {agents.map(agent => (
+                    {localAgents.map(agent => (
                         <div key={agent.id} className="flex items-center gap-4 p-3 rounded-lg border" style={{
                             backgroundColor: 'var(--admin-sidebar-bg, #374151)',
                             borderColor: 'var(--admin-border, #374151)',
@@ -85,7 +125,7 @@ const AgentSettings: React.FC = () => {
                             <input
                                 type="text"
                                 value={agent.name}
-                                onChange={(e) => updateAgent({ ...agent, name: e.target.value })}
+                                onChange={(e) => handleAgentNameChange(agent.id, e.target.value)}
                                 className="flex-grow font-semibold focus:outline-none focus:ring-1 rounded px-2 py-1"
                                 style={{
                                     backgroundColor: 'transparent',
@@ -98,6 +138,16 @@ const AgentSettings: React.FC = () => {
                                 }}
                                 onBlur={(e) => {
                                     e.currentTarget.style.borderColor = 'transparent';
+                                    // Save immediately on blur
+                                    const timeout = agentTimeouts.current.get(agent.id);
+                                    if (timeout) {
+                                        clearTimeout(timeout);
+                                        agentTimeouts.current.delete(agent.id);
+                                        const currentAgent = localAgents.find(a => a.id === agent.id);
+                                        if (currentAgent) {
+                                            updateAgent(currentAgent);
+                                        }
+                                    }
                                 }}
                             />
                             <button 

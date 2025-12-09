@@ -215,8 +215,9 @@ const UserManagementSettings: React.FC = () => {
                                             <p className="font-medium" style={{ color: 'var(--admin-text-primary, #f3f4f6)' }}>{user.name}</p>
                                             <p className="text-sm" style={{ color: 'var(--admin-text-secondary, #d1d5db)' }}>{user.email}</p>
                                             <p className="text-xs mt-1" style={{ color: 'var(--admin-text-muted, #9ca3af)' }}>
-                                                Rooli: {user.role === 'superadmin' ? 'Superadmin' : user.role === 'admin' ? 'Admin' : user.role === 'agent' ? 'Agentti' : 'Katselija'} 
-                                                {userAllowedBots.length > 0 && ` • ${userAllowedBots.length} bottia`}
+                                                Rooli: {user.role === 'superadmin' ? 'Superadmin' : user.role === 'admin' ? 'Admin' : user.role === 'agent' ? 'Agentti' : 'Katselija'} • 
+                                                Sähköposti: {user.email}
+                                                {userAllowedBots.length > 0 && !userIsSuperAdmin && ` • ${userAllowedBots.length} bottia`}
                                             </p>
                                         </div>
                                         <div className="flex items-center gap-2">
@@ -278,13 +279,22 @@ const UserManagementSettings: React.FC = () => {
                                         <div className="mt-4 pt-4 border-t" style={{ borderColor: 'var(--admin-border, #374151)' }}>
                                             <p className="text-sm font-medium mb-3" style={{ color: 'var(--admin-text-primary, #f3f4f6)' }}>
                                                 Käytettävissä olevat botit:
-                                                <span className="text-xs ml-2" style={{ color: 'var(--admin-text-muted, #9ca3af)' }}>
-                                                    (Valittu: {userAllowedBots.length} / {bots.length} saatavilla)
-                                                </span>
+
+                                                { userIsSuperAdmin || (user.role === 'superadmin' || user.role === 'admin' && !userIsSuperAdmin) ? (
+                                                    <span className="text-xs ml-2" style={{ color: 'var(--admin-text-muted, #9ca3af)' }}>
+                                                        {bots.length} saatavilla
+                                                    </span>
+                                                ) : (
+                                                    <span className="text-xs ml-2" style={{ color: 'var(--admin-text-muted, #9ca3af)' }}>
+                                                        (Valittu: {userAllowedBots.length} / {bots.length} saatavilla)
+                                                    </span>
+                                                )}
                                             </p>
                                             {bots.length === 0 ? (
                                                 <p className="text-sm" style={{ color: 'var(--admin-text-muted, #9ca3af)' }}>Ei botteja saatavilla.</p>
                                             ) : (
+
+                                                (user.role === 'agent' || user.role === 'viewer') && (
                                                 <div className="space-y-2">
                                                     {bots.map(bot => {
                                                         const isSelected = userAllowedBots.includes(bot.id);
@@ -318,31 +328,7 @@ const UserManagementSettings: React.FC = () => {
                                                             </label>
                                                         );
                                                     })}
-                                                </div>
-                                            )}
-                                            {userAllowedBots.length > 0 && (
-                                                <div className="mt-3 pt-3 border-t" style={{ borderColor: 'var(--admin-border, #374151)' }}>
-                                                    <p className="text-xs mb-2" style={{ color: 'var(--admin-text-muted, #9ca3af)' }}>Valitut bot ID:t:</p>
-                                                    <div className="flex flex-wrap gap-1">
-                                                        {userAllowedBots.map(botId => {
-                                                            const botExists = bots.some(b => b.id === botId);
-                                                            return (
-                                                                <span 
-                                                                    key={botId}
-                                                                    className="text-xs px-2 py-1 rounded"
-                                                                    style={{
-                                                                        backgroundColor: botExists ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)',
-                                                                        color: botExists ? '#86efac' : '#fca5a5'
-                                                                    }}
-                                                                    title={botExists ? 'Botti löytyy' : 'Bottia ei löydy'}
-                                                                >
-                                                                    {botId}
-                                                                    {!botExists && ' (ei löydy)'}
-                                                                </span>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </div>
+                                                </div>)
                                             )}
                                         </div>
                                     )}

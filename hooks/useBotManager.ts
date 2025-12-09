@@ -27,6 +27,7 @@ export const useBotManager = () => {
     const [isInitialized, setIsInitialized] = useState(false);
     const [isCreatingBot, setIsCreatingBot] = useState(false);
     const activeBotIdRef = useRef<string | null>(null);
+    const allowedBotUnsubscribesRef = useRef<Map<string, () => void>>(new Map());
     
     // Keep ref in sync with state
     useEffect(() => {
@@ -118,94 +119,185 @@ export const useBotManager = () => {
                     clearInterval(pollInterval);
                 };
             } else {
-                // Non-admin users: get owned bots + allowed bots
-                const ownedBotsQuery = query(botsCollection, where('ownerId', '==', user.uid));
+                 // Non-admin users: get owned bots + allowed bots
+                 const ownedBotsQuery = query(botsCollection, where('ownerId', '==', user.uid));
                 
-                if (unsubscribeBots) unsubscribeBots();
-                unsubscribeBots = onSnapshot(ownedBotsQuery, async (querySnapshot) => {
-                    const ownedBots = querySnapshot.docs.map(doc => doc.data());
-                    console.log(`Found ${ownedBots.length} owned bots for user ${user.uid}:`, ownedBots.map(b => ({ id: b.id, name: b.name })));
-                    
-                        // Also fetch allowed bots if any
-                        let allowedBots: Bot[] = [];
-                        const invalidBotIds: string[] = [];
-                        if (allowedBotIds.length > 0) {
-                            console.log('Fetching allowed bots:', allowedBotIds);
-                            const allowedBotsPromises = allowedBotIds.map(async (botId: string) => {
-                                try {
-                                    const botDoc = await getDoc(doc(db, 'bots', botId).withConverter(botConverter));
-                                    if (botDoc.exists()) {
-                                        const botData = botDoc.data();
-                                        console.log(`Found allowed bot ${botId}:`, { 
-                                            name: botData.name, 
-                                            ownerId: botData.ownerId,
-                                            id: botData.id 
-                                        });
-                                        return botData;
-                                    } else {
-                                        console.warn(`Bot ${botId} does not exist in database (checked via allowedBotIds)`);
-                                        invalidBotIds.push(botId);
-                                        return null;
-                                    }
-                                } catch (error) {
-                                    console.error(`Error fetching bot ${botId} from allowedBotIds:`, error);
-                                    invalidBotIds.push(botId);
-                                    return null;
-                                }
-                            });
-                            const fetchedBots = await Promise.all(allowedBotsPromises);
-                            allowedBots = fetchedBots.filter((bot): bot is Bot => bot !== null);
-                            console.log(`Successfully fetched ${allowedBots.length} out of ${allowedBotIds.length} allowed bots`);
-                            
-                            // Clean up invalid bot IDs from user document
-                            if (invalidBotIds.length > 0) {
-                                console.warn(`Found ${invalidBotIds.length} invalid bot IDs, cleaning up:`, invalidBotIds);
-                                try {
-                                    const validBotIds = allowedBotIds.filter(id => !invalidBotIds.includes(id));
-                                    await updateDoc(userDocRef, {
-                                        allowedBotIds: validBotIds
-                                    });
-                                    console.log(`Cleaned up invalid bot IDs from user document. Remaining valid IDs:`, validBotIds);
-                                } catch (error) {
-                                    console.error('Error cleaning up invalid bot IDs:', error);
-                                }
-                            }
-                        }
-                    
-                    // Combine owned and allowed bots, remove duplicates
-                    const allBots = [...ownedBots];
-                    allowedBots.forEach(allowedBot => {
-                        if (!allBots.find(b => b.id === allowedBot.id)) {
-                            allBots.push(allowedBot);
-                        }
-                    });
-                    
-                    console.log(`Non-admin: Found ${allBots.length} bots (${ownedBots.length} owned + ${allowedBots.length} allowed)`);
-                    console.log('All bots:', allBots.map(b => ({ id: b.id, name: b.name, ownerId: b.ownerId })));
-                    setBots(allBots);
+                 // Funktio joka asettaa onSnapshot-kuuntelijat allowed botteille
+                 const setupAllowedBotListeners = (allowedBotIds: string[]) => {
+                     const unsubscribes = allowedBotUnsubscribesRef.current;
+                     
+                     // Poista vanhat kuuntelijat joita ei enää tarvita
+                     const currentBotIds = new Set(allowedBotIds);
+                     unsubscribes.forEach((unsubscribe, botId) => {
+                         if (!currentBotIds.has(botId)) {
+                             unsubscribe();
+                             unsubscribes.delete(botId);
+                             console.log(`Removed listener for allowed bot ${botId}`);
+                         }
+                     });
+                     
+                     // Luo uudet kuuntelijat uusille botteille
+                     allowedBotIds.forEach(botId => {
+                         if (!unsubscribes.has(botId)) {
+                             const botDocRef = doc(db, 'bots', botId).withConverter(botConverter);
+                             const unsubscribe = onSnapshot(botDocRef, (botSnapshot) => {
+                                 if (botSnapshot.exists()) {
+                                     const botData = botSnapshot.data();
+                                     console.log(`Allowed bot ${botId} updated in real-time:`, botData.name);
+                                     
+                                     // Päivitä botti stateen reaaliajassa
+                                     setBots(prevBots => {
+                                         const existingBot = prevBots.find(b => b.id === botId);
+                                         if (existingBot) {
+                                             // Päivitä olemassa oleva botti
+                                             return prevBots.map(b => b.id === botId ? botData : b);
+                                         } else {
+                                             // Lisää uusi botti jos se ei ole jo listassa
+                                             const isOwned = prevBots.some(b => b.id === botId && b.ownerId === user.uid);
+                                             if (!isOwned) {
+                                                 return [...prevBots, botData];
+                                             }
+                                             return prevBots;
+                                         }
+                                     });
+                                 } else {
+                                     console.warn(`Allowed bot ${botId} no longer exists`);
+                                     // Poista botti stateesta jos se poistettiin
+                                     setBots(prevBots => prevBots.filter(b => b.id !== botId));
+                                 }
+                             }, (error) => {
+                                 console.error(`Error listening to allowed bot ${botId}:`, error);
+                             });
+                             
+                             unsubscribes.set(botId, unsubscribe);
+                             console.log(`Added real-time listener for allowed bot ${botId}`);
+                         }
+                     });
+                 };
+                 
+                 // Funktio joka hakee ja yhdistää botit
+                 const loadAndCombineBots = async () => {
+                     try {
+                         // Hae omistetut botit
+                         const ownedBotsSnapshot = await getDocs(ownedBotsQuery);
+                         const ownedBots = ownedBotsSnapshot.docs.map(doc => doc.data());
+                         console.log(`Found ${ownedBots.length} owned bots for user ${user.uid}:`, ownedBots.map(b => ({ id: b.id, name: b.name })));
+                         
+                         // Hae allowedBotIds uudelleen käyttäjädokumentista, jotta saadaan aina uusin arvo
+                         let currentAllowedBotIds: string[] = [];
+                         try {
+                             const currentUserDoc = await getDoc(userDocRef);
+                             if (currentUserDoc.exists()) {
+                                 const currentUserData = currentUserDoc.data();
+                                 currentAllowedBotIds = currentUserData.allowedBotIds || [];
+                                 console.log('Fetched current allowedBotIds from user document:', currentAllowedBotIds);
+                             }
+                         } catch (error) {
+                             console.error('Error fetching current user document for allowedBotIds:', error);
+                             // Fallback: käytä vanhaa arvoa jos haku epäonnistuu
+                             currentAllowedBotIds = allowedBotIds;
+                         }
+                         
+                         // Aseta onSnapshot-kuuntelijat allowed botteille
+                         setupAllowedBotListeners(currentAllowedBotIds);
+                         
+                         // Hae allowed botit ensimmäisellä kerralla (jotta ne näkyvät heti)
+                         let allowedBots: Bot[] = [];
+                         const invalidBotIds: string[] = [];
+                         if (currentAllowedBotIds.length > 0) {
+                             console.log('Fetching allowed bots initially:', currentAllowedBotIds);
+                             const allowedBotsPromises = currentAllowedBotIds.map(async (botId: string) => {
+                                 try {
+                                     const botDoc = await getDoc(doc(db, 'bots', botId).withConverter(botConverter));
+                                     if (botDoc.exists()) {
+                                         const botData = botDoc.data();
+                                         console.log(`Found allowed bot ${botId}:`, { 
+                                             name: botData.name, 
+                                             ownerId: botData.ownerId,
+                                             id: botData.id 
+                                         });
+                                         return botData;
+                                     } else {
+                                         console.warn(`Bot ${botId} does not exist in database (checked via allowedBotIds)`);
+                                         invalidBotIds.push(botId);
+                                         return null;
+                                     }
+                                 } catch (error) {
+                                     console.error(`Error fetching bot ${botId} from allowedBotIds:`, error);
+                                     invalidBotIds.push(botId);
+                                     return null;
+                                 }
+                             });
+                             const fetchedBots = await Promise.all(allowedBotsPromises);
+                             allowedBots = fetchedBots.filter((bot): bot is Bot => bot !== null);
+                             console.log(`Successfully fetched ${allowedBots.length} out of ${currentAllowedBotIds.length} allowed bots`);
+                             
+                             // Clean up invalid bot IDs from user document
+                             if (invalidBotIds.length > 0) {
+                                 console.warn(`Found ${invalidBotIds.length} invalid bot IDs, cleaning up:`, invalidBotIds);
+                                 try {
+                                     const validBotIds = currentAllowedBotIds.filter(id => !invalidBotIds.includes(id));
+                                     await updateDoc(userDocRef, {
+                                         allowedBotIds: validBotIds
+                                     });
+                                     console.log(`Cleaned up invalid bot IDs from user document. Remaining valid IDs:`, validBotIds);
+                                     // Päivitä kuuntelijat uudelleen
+                                     setupAllowedBotListeners(validBotIds);
+                                 } catch (error) {
+                                     console.error('Error cleaning up invalid bot IDs:', error);
+                                 }
+                             }
+                         }
+                         
+                         // Yhdistä omistetut ja allowed botit
+                         const allBots = [...ownedBots];
+                         allowedBots.forEach(allowedBot => {
+                             if (!allBots.find(b => b.id === allowedBot.id)) {
+                                 allBots.push(allowedBot);
+                             }
+                         });
+                         
+                         console.log(`Non-admin: Found ${allBots.length} bots (${ownedBots.length} owned + ${allowedBots.length} allowed)`);
+                         console.log('All bots:', allBots.map(b => ({ id: b.id, name: b.name, ownerId: b.ownerId })));
+                         setBots(allBots);
 
-                    // Set active bot on first load or if current active bot is not in list
-                    if (!isInitialized) {
-                        const storedBotId = localStorage.getItem(LAST_ACTIVE_BOT_KEY);
-                        if (storedBotId && allBots.some(b => b.id === storedBotId)) {
-                            setActiveBotIdState(storedBotId);
-                        } else if (allBots.length > 0) {
-                            setActiveBotIdState(allBots[0].id);
-                        }
-                        setIsInitialized(true);
-                    } else if (activeBotIdRef.current && !allBots.some(b => b.id === activeBotIdRef.current)) {
-                        // If current active bot is no longer available, switch to first bot
-                        if (allBots.length > 0) {
-                            setActiveBotIdState(allBots[0].id);
-                        } else {
-                            setActiveBotIdState(null);
-                        }
-                    }
-                }, (error) => {
-                    console.error("Error fetching bots:", error);
-                    setIsInitialized(true); 
-                });
+                         // Set active bot on first load or if current active bot is not in list
+                         if (!isInitialized) {
+                             const storedBotId = localStorage.getItem(LAST_ACTIVE_BOT_KEY);
+                             if (storedBotId && allBots.some(b => b.id === storedBotId)) {
+                                 setActiveBotIdState(storedBotId);
+                             } else if (allBots.length > 0) {
+                                 setActiveBotIdState(allBots[0].id);
+                             }
+                             setIsInitialized(true);
+                         } else if (activeBotIdRef.current && !allBots.some(b => b.id === activeBotIdRef.current)) {
+                             // If current active bot is no longer available, switch to first bot
+                             if (allBots.length > 0) {
+                                 setActiveBotIdState(allBots[0].id);
+                             } else {
+                                 setActiveBotIdState(null);
+                             }
+                         }
+                     } catch (error) {
+                         console.error("Error loading and combining bots:", error);
+                         setIsInitialized(true);
+                     }
+                 };
+                 
+                 // Kuuntele omistettujen bottien muutoksia
+                 if (unsubscribeBots) unsubscribeBots();
+                 unsubscribeBots = onSnapshot(ownedBotsQuery, () => {
+                     // Kun omistetut botit muuttuvat, lataa botit uudelleen
+                     loadAndCombineBots();
+                 }, (error) => {
+                     console.error("Error fetching bots:", error);
+                     setIsInitialized(true); 
+                 });
+                 
+                 // Lataa botit heti ensimmäisellä kerralla
+                 loadAndCombineBots();
             }
+            
         };
 
         // Listen to user document changes
@@ -241,6 +333,11 @@ export const useBotManager = () => {
             if (unsubscribeUser) {
                 unsubscribeUser();
             }
+            // Poista kaikki allowed bot -kuuntelijat
+            allowedBotUnsubscribesRef.current.forEach((unsubscribe) => {
+                unsubscribe();
+            });
+            allowedBotUnsubscribesRef.current.clear();
         };
     }, [user?.uid, isInitialized]);
 
@@ -266,6 +363,38 @@ export const useBotManager = () => {
                 ...botData,
                 ownerId: user.uid
             } as Bot); // Cast to Bot type for the converter
+            
+            // Lisää botin ID käyttäjän allowedBotIds-listaan
+            try {
+                const userDocRef = doc(db, 'users', user.uid);
+                const userDoc = await getDoc(userDocRef);
+                
+                if (userDoc.exists()) {
+                    const userData = userDoc.data();
+                    const currentAllowedBotIds = userData.allowedBotIds || [];
+                    
+                    // Varmista, että botin ID ei ole jo listassa
+                    if (!currentAllowedBotIds.includes(docRef.id)) {
+                        await updateDoc(userDocRef, {
+                            allowedBotIds: [...currentAllowedBotIds, docRef.id]
+                        });
+                        console.log(`Added bot ${docRef.id} to user's allowedBotIds`);
+                    }
+                } else {
+                    // Jos käyttäjädokumenttia ei ole, luo se
+                    await setDoc(userDocRef, {
+                        email: user.email || '',
+                        role: 'agent',
+                        name: user.email?.split('@')[0] || '',
+                        allowedBotIds: [docRef.id]
+                    });
+                    console.log(`Created user document with bot ${docRef.id} in allowedBotIds`);
+                }
+            } catch (userUpdateError) {
+                console.error("Error updating user's allowedBotIds:", userUpdateError);
+                // Älä keskeytä botin luomista, vaikka käyttäjän päivitys epäonnistuisi
+            }
+            
             setActiveBotId(docRef.id);
             setIsCreatingBot(false); // Close wizard after adding
         } catch (error) {
@@ -277,11 +406,12 @@ export const useBotManager = () => {
         try {
             // Use the converted doc ref for updating
             const botRef = doc(db, 'bots', updatedBot.id).withConverter(botConverter);
-            // Use setDoc instead of updateDoc to ensure type compatibility with the converter
+            // Use setDoc with merge: true to ensure type compatibility with the converter
             // and full object update logic (toFirestore handles id removal)
-            await setDoc(botRef, updatedBot);
+            await setDoc(botRef, updatedBot, { merge: true });
         } catch (error) {
             console.error("Error updating bot:", error);
+            throw error; // Re-throw to allow error handling in calling code
         }
     }, []);
 

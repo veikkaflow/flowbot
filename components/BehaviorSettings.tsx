@@ -4,10 +4,22 @@ import React from 'react';
 import { useSettings } from '../hooks/useSettings.ts';
 import { Settings, User, Mail, Briefcase } from './Icons.tsx';
 import { useLanguage } from '../context/LanguageContext.tsx';
+import { useDebouncedSave } from '../hooks/useDebouncedSave.ts';
 
 const BehaviorSettings: React.FC = () => {
     const { settings: behavior, updateSettings, setSettings } = useSettings('behavior');
     const { t } = useLanguage();
+
+    // Debounced save for text areas
+    const [leadGenHook, setLeadGenHook, isSavingLeadGen] = useDebouncedSave(
+        behavior?.leadGenHook,
+        (value) => updateSettings({ leadGenHook: value })
+    );
+
+    const [helpText, setHelpText, isSavingHelp] = useDebouncedSave(
+        behavior?.helpText,
+        (value) => updateSettings({ helpText: value })
+    );
 
     if (!behavior) return null;
 
@@ -103,8 +115,8 @@ const BehaviorSettings: React.FC = () => {
                  <p className="text-sm mt-1 mb-2" style={{ color: 'var(--admin-text-secondary, #d1d5db)' }}>{t('beh.lead_gen_desc')}</p>
                  <textarea
                     rows={3}
-                    value={behavior.leadGenHook}
-                    onChange={e => updateSettings({ leadGenHook: e.target.value })}
+                    value={leadGenHook}
+                    onChange={e => setLeadGenHook(e.target.value)}
                     className="w-full px-3 py-2 rounded-md border"
                     placeholder={t('beh.lead_gen_placeholder')}
                     style={{
@@ -145,6 +157,31 @@ const BehaviorSettings: React.FC = () => {
                         }}></div>
                     </label>
                 </div>
+            </div>
+
+            <div className="p-6 rounded-lg border" style={{
+                backgroundColor: 'var(--admin-card-bg, #1f2937)',
+                borderColor: 'var(--admin-border, #374151)'
+            }}>
+                <h4 className="font-semibold mb-2" style={{ color: 'var(--admin-text-primary, #f3f4f6)' }}>Ohjeteksti</h4>
+                <p className="text-sm mb-4" style={{ color: 'var(--admin-text-secondary, #d1d5db)' }}>
+                    Kirjoita ohjeteksti, joka näytetään käyttäjille ohjeet-näkymässä. Voit käyttää tätä kertomaan käyttäjille miten chattia käytetään.
+                </p>
+                <textarea
+                    rows={8}
+                    value={helpText}
+                    onChange={e => setHelpText(e.target.value)}
+                    className="w-full px-3 py-2 rounded-md border"
+                    placeholder="Kirjoita ohjeteksti tähän..."
+                    style={{
+                        backgroundColor: 'var(--admin-sidebar-bg, #374151)',
+                        color: 'var(--admin-text-primary, #f3f4f6)',
+                        borderColor: 'var(--admin-border, #374151)'
+                    }}
+                />
+                <p className="text-xs mt-2" style={{ color: 'var(--admin-text-muted, #9ca3af)' }}>
+                    Tämä teksti näytetään käyttäjille, kun he klikkaavat "Ohjeet" asetukset-valikosta.
+                </p>
             </div>
         </div>
     );

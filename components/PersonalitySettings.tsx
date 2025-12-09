@@ -1,10 +1,11 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { usePersonality } from '../hooks/usePersonality.ts';
 import { Scenario, QuickReply, IconName } from '../types.ts';
 import { Smile, Plus, Trash2, ChevronsUpDown } from './Icons.tsx';
 import * as Icons from './Icons.tsx';
 import { useLanguage } from '../context/LanguageContext.tsx';
+import { useDebouncedSave } from '../hooks/useDebouncedSave.ts';
 
 const iconOptions = Object.keys(Icons).filter(key => key[0] === key[0].toUpperCase() && key !== 'BrandLogo') as IconName[];
 
@@ -104,39 +105,119 @@ const PersonalitySettings: React.FC = () => {
     const { personality, updateSettings, addScenario, updateScenario, deleteScenario, addQuickReply, updateQuickReply, deleteQuickReply } = usePersonality();
     const { t } = useLanguage();
 
+    // Debounced save for custom instruction
+    const [customInstruction, setCustomInstruction, isSavingInstruction] = useDebouncedSave(
+        personality?.customInstruction,
+        (value) => updateSettings({ customInstruction: value })
+    );
+
+    // Debounced save for opening messages
+    const [openingMessageFi, setOpeningMessageFi, isSavingOpeningFi] = useDebouncedSave(
+        personality?.openingMessage?.fi,
+        (value) => updateSettings({
+            openingMessage: {
+                ...personality?.openingMessage,
+                fi: value
+            }
+        })
+    );
+
+    const [openingMessageEn, setOpeningMessageEn, isSavingOpeningEn] = useDebouncedSave(
+        personality?.openingMessage?.en,
+        (value) => updateSettings({
+            openingMessage: {
+                ...personality?.openingMessage,
+                en: value
+            }
+        })
+    );
+
     if (!personality) return null;
 
-    const handleScenarioChange = (id: string, field: keyof Scenario, value: string) => {
-        const scenario = personality.scenarios.find(s => s.id === id);
-        if (scenario) {
-            updateScenario({ ...scenario, [field]: value });
+    // Local state for quick replies and scenarios (for immediate UI updates)
+    const [localQuickReplies, setLocalQuickReplies] = useState<QuickReply[]>(personality?.quickReplies || []);
+    const [localScenarios, setLocalScenarios] = useState<Scenario[]>(personality?.scenarios || []);
+
+    // Sync local state when personality changes
+    useEffect(() => {
+        if (personality) {
+            setLocalQuickReplies(personality.quickReplies || []);
+            setLocalScenarios(personality.scenarios || []);
         }
-    };
+    }, [personality?.quickReplies, personality?.scenarios]);
+
+    // Debounced handlers for scenarios and quick replies
+    const scenarioTimeouts = useRef<Map<string, NodeJS.Timeout>>(new Map());
+    const quickReplyTimeouts = useRef<Map<string, NodeJS.Timeout>>(new Map());
+
+    const handleScenarioChange = useCallback((id: string, field: keyof Scenario, value: string) => {
+        // Update local state immediately
+        setLocalScenarios(prev => {
+            const updated = prev.map(s => s.id === id ? { ...s, [field]: value } : s);
+            
+            // Clear existing timeout for this scenario
+            const existingTimeout = scenarioTimeouts.current.get(id);
+            if (existingTimeout) {
+                clearTimeout(existingTimeout);
+            }
+
+            // Set new timeout with updated value
+            const timeout = setTimeout(() => {
+                const scenario = updated.find(s => s.id === id);
+                if (scenario) {
+                    updateScenario({ ...scenario, [field]: value });
+                }
+                scenarioTimeouts.current.delete(id);
+            }, 1000);
+
+            scenarioTimeouts.current.set(id, timeout);
+            return updated;
+        });
+    }, [updateScenario]);
     
-    const handleQuickReplyChange = (id: string, lang: 'fi' | 'en', value: string) => {
-        const reply = personality.quickReplies.find(qr => qr.id === id);
-        if (reply) {
-            updateQuickReply({ 
-                ...reply, 
-                text: { ...reply.text, [lang]: value } 
-            });
-        }
-    };
+    const handleQuickReplyChange = useCallback((id: string, lang: 'fi' | 'en', value: string) => {
+        // Update local state immediately
+        setLocalQuickReplies(prev => {
+            const updated = prev.map(qr => 
+                qr.id === id ? { ...qr, text: { ...qr.text, [lang]: value } } : qr
+            );
+
+            // Clear existing timeout for this quick reply
+            const existingTimeout = quickReplyTimeouts.current.get(`${id}-${lang}`);
+            if (existingTimeout) {
+                clearTimeout(existingTimeout);
+            }
+
+            // Set new timeout with updated value
+            const timeout = setTimeout(() => {
+                const reply = updated.find(qr => qr.id === id);
+                if (reply) {
+                    updateQuickReply({ 
+                        ...reply, 
+                        text: { ...reply.text, [lang]: value } 
+                    });
+                }
+                quickReplyTimeouts.current.delete(`${id}-${lang}`);
+            }, 1000);
+
+            quickReplyTimeouts.current.set(`${id}-${lang}`, timeout);
+            return updated;
+        });
+    }, [updateQuickReply]);
+
+    // Cleanup timeouts on unmount
+    useEffect(() => {
+        return () => {
+            scenarioTimeouts.current.forEach(timeout => clearTimeout(timeout));
+            quickReplyTimeouts.current.forEach(timeout => clearTimeout(timeout));
+        };
+    }, []);
 
     const handleQuickReplyIconChange = (id: string, value: IconName) => {
         const reply = personality.quickReplies.find(qr => qr.id === id);
         if (reply) {
             updateQuickReply({ ...reply, icon: value });
         }
-    };
-
-    const handleOpeningMessageChange = (lang: 'fi' | 'en', value: string) => {
-        updateSettings({
-            openingMessage: {
-                ...personality.openingMessage,
-                [lang]: value
-            }
-        });
     };
 
     return (
@@ -175,8 +256,8 @@ const PersonalitySettings: React.FC = () => {
                         <textarea 
                             id="customInstruction" 
                             rows={3} 
-                            value={personality.customInstruction} 
-                            onChange={(e) => updateSettings({ customInstruction: e.target.value })} 
+                            value={customInstruction} 
+                            onChange={(e) => setCustomInstruction(e.target.value)} 
                             className="w-full px-3 py-2 rounded-md border" 
                             placeholder="Esim: Vastaa aina suomeksi. Älä ehdota kilpailevia tuotteita."
                             style={{
@@ -195,8 +276,8 @@ const PersonalitySettings: React.FC = () => {
                             <span className="text-xs uppercase font-bold tracking-wider mb-1 block" style={{ color: 'var(--admin-text-muted, #9ca3af)' }}>Suomi (FI)</span>
                             <input 
                                 type="text" 
-                                value={personality.openingMessage.fi} 
-                                onChange={(e) => handleOpeningMessageChange('fi', e.target.value)} 
+                                value={openingMessageFi} 
+                                onChange={(e) => setOpeningMessageFi(e.target.value)} 
                                 className="w-full px-3 py-2 rounded-md border" 
                                 placeholder="Hei! Miten voin auttaa?"
                                 style={{
@@ -210,8 +291,8 @@ const PersonalitySettings: React.FC = () => {
                             <span className="text-xs uppercase font-bold tracking-wider mb-1 block" style={{ color: 'var(--admin-text-muted, #9ca3af)' }}>English (EN)</span>
                             <input 
                                 type="text" 
-                                value={personality.openingMessage.en} 
-                                onChange={(e) => handleOpeningMessageChange('en', e.target.value)} 
+                                value={openingMessageEn} 
+                                onChange={(e) => setOpeningMessageEn(e.target.value)} 
                                 className="w-full px-3 py-2 rounded-md border" 
                                 placeholder="Hello! How can I help you?"
                                 style={{
@@ -250,7 +331,7 @@ const PersonalitySettings: React.FC = () => {
                 </div>
                 <p className="text-sm" style={{ color: 'var(--admin-text-secondary, #d1d5db)' }}>{t('pers.replies_desc')}</p>
                 <div className="space-y-3">
-                    {personality.quickReplies?.map(qr => {
+                    {localQuickReplies.map(qr => {
                         const Icon = getIconComponent(qr.icon);
                         return (
                              <div key={qr.id} className="p-3 rounded-lg border flex flex-col md:flex-row gap-3 items-start md:items-center" style={{
@@ -341,7 +422,7 @@ const PersonalitySettings: React.FC = () => {
                 </div>
                 <p className="text-sm" style={{ color: 'var(--admin-text-secondary, #d1d5db)' }}>{t('pers.scenarios_desc')}</p>
                 <div className="space-y-4">
-                    {personality.scenarios.map(s => (
+                    {localScenarios.map(s => (
                         <div key={s.id} className="p-4 rounded-lg border" style={{
                             backgroundColor: 'var(--admin-sidebar-bg, #374151)',
                             borderColor: 'var(--admin-border, #374151)'

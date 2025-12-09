@@ -6,35 +6,47 @@ import { useNotification } from '../context/NotificationContext.tsx';
 import { Palette, Image, UploadCloud, Plus, Monitor } from './Icons.tsx';
 import { BackgroundAnimation as AnimationType } from '../types.ts';
 import { useLanguage } from '../context/LanguageContext.tsx';
+import { useDebouncedSave } from '../hooks/useDebouncedSave.ts';
 
-const ColorPicker: React.FC<{ label: string; color: string; onChange: (color: string) => void; }> = ({ label, color, onChange }) => (
-    <div>
-        <label className="block text-sm font-medium mb-1" style={{ color: 'var(--admin-text-primary, #f3f4f6)' }}>{label}</label>
-        <div className="flex items-center gap-2">
-            <input 
-                type="color" 
-                value={color} 
-                onChange={(e) => onChange(e.target.value)} 
-                className="p-1 h-10 w-10 block cursor-pointer rounded-lg border" 
-                style={{
-                    backgroundColor: 'var(--admin-sidebar-bg, #374151)',
-                    borderColor: 'var(--admin-border, #374151)'
-                }}
-            />
-            <input 
-                type="text" 
-                value={color} 
-                onChange={(e) => onChange(e.target.value)} 
-                className="w-full px-3 py-2 rounded-md border" 
-                style={{
-                    backgroundColor: 'var(--admin-sidebar-bg, #374151)',
-                    color: 'var(--admin-text-primary, #f3f4f6)',
-                    borderColor: 'var(--admin-border, #374151)'
-                }}
-            />
+const ColorPicker: React.FC<{ label: string; color: string; onChange: (color: string) => void; }> = ({ label, color, onChange }) => {
+    const [localColor, setLocalColor, isSaving] = useDebouncedSave(
+        color,
+        (value) => onChange(value),
+        500 // Shorter debounce for colors
+    );
+
+    return (
+        <div>
+            <label className="block text-sm font-medium mb-1" style={{ color: 'var(--admin-text-primary, #f3f4f6)' }}>{label}</label>
+            <div className="flex items-center gap-2">
+                <input 
+                    type="color" 
+                    value={localColor} 
+                    onChange={(e) => {
+                        setLocalColor(e.target.value);
+                        onChange(e.target.value); // Immediate update for color picker
+                    }} 
+                    className="p-1 h-10 w-10 block cursor-pointer rounded-lg border" 
+                    style={{
+                        backgroundColor: 'var(--admin-sidebar-bg, #374151)',
+                        borderColor: 'var(--admin-border, #374151)'
+                    }}
+                />
+                <input 
+                    type="text" 
+                    value={localColor} 
+                    onChange={(e) => setLocalColor(e.target.value)} 
+                    className="w-full px-3 py-2 rounded-md border" 
+                    style={{
+                        backgroundColor: 'var(--admin-sidebar-bg, #374151)',
+                        color: 'var(--admin-text-primary, #f3f4f6)',
+                        borderColor: 'var(--admin-border, #374151)'
+                    }}
+                />
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 // Memoized AnimationCard - renderöidään uudelleen vain jos propsit muuttuvat
 const AnimationCard: React.FC<{ name: string; type: AnimationType; selected: AnimationType; onSelect: (type: AnimationType) => void; }> = React.memo(({ name, type, selected, onSelect }) => {
@@ -111,6 +123,17 @@ const AppearanceSettings: React.FC = () => {
     const logoUploadRef = useRef<HTMLInputElement>(null);
     const { t } = useLanguage();
     
+    // Debounced save for text inputs
+    const [brandName, setBrandName, isSavingBrandName] = useDebouncedSave(
+        appearance?.brandName,
+        (value) => setSettings({ ...appearance!, brandName: value })
+    );
+
+    const [websiteUrl, setWebsiteUrl, isSavingWebsiteUrl] = useDebouncedSave(
+        appearance?.websiteUrl,
+        (value) => setSettings({ ...appearance!, websiteUrl: value })
+    );
+    
     if (!appearance) return null;
 
     // Memoize updateSettings - luodaan uudelleen vain jos appearance tai setSettings muuttuvat
@@ -163,8 +186,8 @@ const AppearanceSettings: React.FC = () => {
                         <input 
                             type="text" 
                             id="brandName" 
-                            value={appearance.brandName} 
-                            onChange={(e) => updateSettings({ brandName: e.target.value })} 
+                            value={brandName} 
+                            onChange={(e) => setBrandName(e.target.value)} 
                             className="w-full px-3 py-2 rounded-md border"
                             style={{
                                 backgroundColor: 'var(--admin-sidebar-bg, #374151)',
@@ -178,8 +201,8 @@ const AppearanceSettings: React.FC = () => {
                         <input 
                             type="url" 
                             id="websiteUrl" 
-                            value={appearance.websiteUrl || ''} 
-                            onChange={(e) => updateSettings({ websiteUrl: e.target.value })} 
+                            value={websiteUrl || ''} 
+                            onChange={(e) => setWebsiteUrl(e.target.value)} 
                             className="w-full px-3 py-2 rounded-md border"
                             style={{
                                 backgroundColor: 'var(--admin-sidebar-bg, #374151)',
