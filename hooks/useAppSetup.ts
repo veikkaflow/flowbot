@@ -25,21 +25,74 @@ export const useAppSetup = (onSetupComplete: (bot: Omit<Bot, 'id'>) => void) => 
         setIsLoading(true);
         setError(null);
         try {
+            console.log('=== STARTING SCRAPING ===');
+            console.log('URL:', url);
+            
+            // Store URL for later use
+            setWebsiteUrl(url);
+            
             const data = await scrapeSite(url);
-            setScrapedData(data);
+            console.log('=== SCRAPED DATA RECEIVED ===');
+            console.log('Full data:', JSON.stringify(data, null, 2));
+            console.log('Title:', data.title);
+            console.log('Logos:', data.logos, 'Length:', data.logos?.length);
+            console.log('Colors:', data.colors, 'Length:', data.colors?.length);
+            console.log('Text length:', data.text?.length);
             
-            setBrandName(data.title || 'Uusi Botti');
-            setSelectedLogo(data.logos[0] || null);
-            setSelectedColor(data.colors[0] || '#3b82f6');
-            setSelectedHeaderColor(data.colors[1] || '#1f2937');
+            // Ensure arrays exist
+            const logos = Array.isArray(data.logos) ? data.logos : [];
+            const colors = Array.isArray(data.colors) && data.colors.length > 0 
+                ? data.colors 
+                : ['#4f46e5', '#1f2937', '#3b82f6', '#10b981', '#f59e0b'];
             
-            if (data.text) {
-                const training = await generateTrainingDataFromText(data.text, data.title);
-                setGeneratedQnaData(training);
+            console.log('Normalized logos:', logos);
+            console.log('Normalized colors:', colors);
+            
+            // Create normalized scraped data
+            const normalizedData = {
+                ...data,
+                logos: logos,
+                colors: colors
+            };
+            
+            setScrapedData(normalizedData);
+            
+            const title = data.title || 'Uusi Botti';
+            const firstLogo = logos.length > 0 ? logos[0] : null;
+            const firstColor = colors[0] || '#3b82f6';
+            const secondColor = colors[1] || '#1f2937';
+            
+            console.log('=== SETTING STATE ===');
+            console.log('Setting brandName to:', title);
+            console.log('Setting selectedLogo to:', firstLogo);
+            console.log('Setting selectedColor to:', firstColor);
+            console.log('Setting selectedHeaderColor to:', secondColor);
+            
+            setBrandName(title);
+            setSelectedLogo(firstLogo);
+            setSelectedColor(firstColor);
+            setSelectedHeaderColor(secondColor);
+            
+            // Generate Q&A data from scraped text
+            if (data.text && data.text.trim().length > 0) {
+                console.log('Generating Q&A data from text, length:', data.text.length);
+                try {
+                    const training = await generateTrainingDataFromText(data.text, data.title || title);
+                    console.log('Generated Q&A data:', training.length, 'items');
+                    setGeneratedQnaData(training);
+                } catch (error) {
+                    console.error('Error generating Q&A data:', error);
+                    // Don't fail the whole process if Q&A generation fails
+                    setGeneratedQnaData([]);
+                }
+            } else {
+                console.warn('No text content found, skipping Q&A generation');
+                setGeneratedQnaData([]);
             }
 
             setStep(2);
         } catch (e: any) {
+            console.error('Scraping error:', e);
             setError(e.message || "Sivuston analysointi epäonnistui.");
         } finally {
             setIsLoading(false);
@@ -59,27 +112,66 @@ export const useAppSetup = (onSetupComplete: (bot: Omit<Bot, 'id'>) => void) => 
             return;
         }
 
+        console.log('=== FINALIZING SETUP ===');
+        console.log('Brand name:', brandName);
+        console.log('Selected logo:', selectedLogo);
+        console.log('Selected color:', selectedColor);
+        console.log('Selected header color:', selectedHeaderColor);
+        console.log('Scraped data:', scrapedData);
+        console.log('Scraped data logos:', scrapedData?.logos);
+        console.log('Scraped data colors:', scrapedData?.colors);
+        console.log('Website URL:', websiteUrl);
+        console.log('Generated Q&A data count:', generatedQnaData.length);
+        console.log('Template Q&A data count:', template.settings.qnaData?.length || 0);
+        
+        // Use scraped data colors if available, otherwise use selected colors
+        const finalPrimaryColor = selectedColor || scrapedData?.colors?.[0] || template.settings.appearance.primaryColor;
+        const finalHeaderColor = selectedHeaderColor || scrapedData?.colors?.[1] || template.settings.appearance.headerColor;
+        const finalLogo = selectedLogo || scrapedData?.logos?.[0] || undefined;
+        const finalLogoGallery = scrapedData?.logos && scrapedData.logos.length > 0 
+            ? scrapedData.logos 
+            : (selectedLogo ? [selectedLogo] : []);
+        
+        console.log('Final colors - Primary:', finalPrimaryColor, 'Header:', finalHeaderColor);
+        console.log('Final logo:', finalLogo);
+        console.log('Final logo gallery:', finalLogoGallery);
+        
+        const qnaDataWithIds = generatedQnaData.map(item => ({ 
+            ...item, 
+            id: `gen_${Date.now()}_${Math.random()}` 
+        }));
+        
+        console.log('Q&A data to save:', qnaDataWithIds.length, 'items');
+        if (qnaDataWithIds.length > 0) {
+            console.log('First Q&A item:', qnaDataWithIds[0]);
+        }
+        
         const newBot: Omit<Bot, 'id'> = {
-            name: brandName,
+            name: brandName || scrapedData?.title || 'Uusi Botti',
             ownerId: user.uid,
             templateId: template.id,
             settings: {
                 ...template.settings,
                 appearance: {
                     ...template.settings.appearance,
-                    brandName: brandName,
-                    brandLogo: selectedLogo || undefined,
-                    logoGallery: scrapedData?.logos || [selectedLogo].filter(Boolean) as string[],
-                    primaryColor: selectedColor || template.settings.appearance.primaryColor,
-                    headerColor: selectedHeaderColor || template.settings.appearance.headerColor,
+                    brandName: brandName || scrapedData?.title || template.settings.appearance.brandName,
+                    brandLogo: finalLogo,
+                    logoGallery: finalLogoGallery,
+                    primaryColor: finalPrimaryColor,
+                    headerColor: finalHeaderColor,
                     websiteUrl: websiteUrl,
                 },
                 qnaData: [
-                    ...template.settings.qnaData,
-                    ...generatedQnaData.map(item => ({ ...item, id: `gen_${Date.now()}_${Math.random()}` }))
+                    ...(template.settings.qnaData || []),
+                    ...qnaDataWithIds
                 ],
             }
         };
+        
+        console.log('=== BOT CREATED ===');
+        console.log('Bot name:', newBot.name);
+        console.log('Bot appearance:', JSON.stringify(newBot.settings.appearance, null, 2));
+        console.log('Bot Q&A data count:', newBot.settings.qnaData.length);
         
         onSetupComplete(newBot);
         

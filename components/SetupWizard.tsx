@@ -22,18 +22,40 @@ const ColorPicker: React.FC<{ title: string, colors: string[], selected: string 
     </div>
 );
 
-const LogoPicker: React.FC<{ logos: string[], selected: string | null, onSelect: (logo: string) => void }> = ({ logos, selected, onSelect }) => (
-     <div>
-        <label className="block text-sm font-medium text-gray-300 mb-2">Valitse logo</label>
-        <div className="flex flex-wrap gap-2">
-            {logos.map(logo => (
-                <button key={logo} onClick={() => onSelect(logo)} className={`w-16 h-16 p-1 rounded-md bg-gray-700 ring-2 ${selected === logo ? 'ring-offset-2 ring-offset-gray-800 ring-white' : 'ring-transparent'}`}>
-                    <img src={logo} alt="logo" className="w-full h-full object-contain" />
-                </button>
-            ))}
+const LogoPicker: React.FC<{ logos: string[], selected: string | null, onSelect: (logo: string) => void }> = ({ logos, selected, onSelect }) => {
+    const [failedLogos, setFailedLogos] = React.useState<Set<string>>(new Set());
+    
+    const handleImageError = (logo: string) => {
+        setFailedLogos(prev => new Set(prev).add(logo));
+    };
+    
+    const validLogos = logos.filter(logo => !failedLogos.has(logo));
+    
+    return (
+        <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">Valitse logo</label>
+            <div className="flex flex-wrap gap-2">
+                {validLogos.map(logo => (
+                    <button 
+                        key={logo} 
+                        onClick={() => onSelect(logo)} 
+                        className={`w-16 h-16 p-1 rounded-md bg-gray-700 ring-2 ${selected === logo ? 'ring-offset-2 ring-offset-gray-800 ring-white' : 'ring-transparent'}`}
+                    >
+                        <img 
+                            src={logo} 
+                            alt="logo" 
+                            className="w-full h-full object-contain" 
+                            onError={() => handleImageError(logo)}
+                        />
+                    </button>
+                ))}
+            </div>
+            {validLogos.length === 0 && logos.length > 0 && (
+                <p className="text-xs text-gray-500 mt-2">Logoja ei voitu ladata. Kokeile lisätä logo manuaalisesti asetuksista.</p>
+            )}
         </div>
-    </div>
-);
+    );
+};
 
 const TemplateSelector: React.FC<{ selected: string, onSelect: (id: string) => void }> = ({ selected, onSelect }) => (
     <div>
@@ -170,24 +192,28 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onSetupComplete, onCancel, on
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <ColorPicker 
                                     title="Pääväri" 
-                                    colors={scrapedData.colors} 
+                                    colors={scrapedData.colors || ['#4f46e5', '#1f2937', '#3b82f6', '#10b981', '#f59e0b']} 
                                     selected={selectedColor} 
                                     onSelect={setSelectedColor} 
                                 />
                                 <ColorPicker 
                                     title="Ylätunnisteen väri" 
-                                    colors={scrapedData.colors} 
+                                    colors={scrapedData.colors || ['#4f46e5', '#1f2937', '#3b82f6', '#10b981', '#f59e0b']} 
                                     selected={selectedHeaderColor} 
                                     onSelect={setSelectedHeaderColor} 
                                 />
                             </div>
 
-                            {scrapedData.logos.length > 0 && (
+                            {scrapedData.logos && scrapedData.logos.length > 0 ? (
                                 <LogoPicker 
                                     logos={scrapedData.logos} 
                                     selected={selectedLogo} 
                                     onSelect={setSelectedLogo} 
                                 />
+                            ) : (
+                                <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700">
+                                    <p className="text-sm text-gray-400">Logoja ei löytynyt sivustolta. Voit lisätä logon myöhemmin asetuksista.</p>
+                                </div>
                             )}
                             
                             <div className="border-t border-gray-700 pt-6">

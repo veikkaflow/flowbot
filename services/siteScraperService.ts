@@ -1,118 +1,112 @@
 import { ScrapedData } from '../types.ts';
-import { functions } from './firebase.ts';
-import { httpsCallable } from 'firebase/functions';
+import { auth } from './firebase.ts';
 
-const toAbsoluteUrl = (baseUrl: string, relativeUrl: string): string => {
-  try {
-    if (relativeUrl.startsWith('http') || relativeUrl.startsWith('//')) {
-      return new URL(relativeUrl, baseUrl).href;
-    }
-    return new URL(relativeUrl, baseUrl).href;
-  } catch (e) {
-    console.warn(`Could not create absolute URL for base: ${baseUrl}, relative: ${relativeUrl}`);
-    return '';
-  }
-};
-
-const getMockHtmlForUrl = (url: string): { html: string, title: string, text: string } => {
-    const hostname = new URL(url).hostname;
-
-    if (hostname.includes('lamnia')) {
-        return {
-            title: "Lamnia",
-            text: "Lamnia on erikoistunut laadukkaisiin veitsiin ja retkeilyvarusteisiin. Tarjoamme nopean toimituksen ja laajan valikoiman kansainvälisiä huippumerkkejä. Asiakaspalvelumme auttaa sinua löytämään juuri oikeat tuotteet tarpeisiisi.",
-            html: `
-                <html><head><title>Lamnia - Veitset ja varusteet</title><link rel="icon" href="/favicon.png"></head>
-                <body><header><img src="/images/lamnia-logo-header.svg" alt="Lamnia Logo"></header>
-                <p>Laaja valikoima ulkoilutuotteita.</p></body></html>`
-        };
-    }
-    if (hostname.includes('aaltovoima')) {
-         return {
-            title: "Aaltovoima Energia",
-            text: "Aaltovoima on paikallinen energiayhtiösi. Tarjoamme luotettavaa ja edullista sähköä kotitalouksille ja yrityksille. Tee sähkösopimus helposti netissä tai ota yhteyttä asiakaspalveluumme. Autamme myös energia-asioissa ja sähkökatkoissa.",
-            html: `
-                <html><head><title>Aaltovoima</title></head>
-                <body><div class="logo-container"><img src="https://aaltovoima.fi/static/logo.png"></div>
-                <h1>Luotettavaa energiaa</h1></body></html>`
-        };
-    }
-     if (hostname.includes('atflow')) {
-         return {
-            title: "atFlow Oy",
-            text: "atFlow on tekoälyratkaisuihin erikoistunut yritys. Kehitämme älykkäitä chatbot- ja automaatioratkaisuja, jotka tehostavat asiakaspalvelua ja myyntiä. Ota yhteyttä ja keskustellaan, miten voimme auttaa teidän liiketoimintaanne kasvamaan.",
-            html: `
-                <html><head><title>atFlow - Tekoälyratkaisut</title><link rel="shortcut icon" href="https://atflow.fi/favicon.ico"></head>
-                <body><nav><a href="/"><img id="main-logo" src="https://atflow.fi/logo.svg"/></a></nav>
-                <p>Tehosta liiketoimintaasi tekoälyllä.</p></body></html>`
-        };
-    }
-    // Default fallback
-    return {
-        title: "Geneerinen Yritys",
-        text: "Tämä on simuloitu tekstisisältö sivustolta. Asiakaspalvelumme palvelee arkisin klo 9-17. Meiltä löydät parhaat tuotteet ja palvelut. Ota yhteyttä sähköpostitse info@example.com tai puhelimitse 010 123 4567.",
-        html: `<html><head><title>Geneerinen Yritys</title></head><body><img src="/logo.png"></body></html>`
-    };
-}
+// Firebase Function URL - replace with your actual function URL
+const FUNCTION_URL = 'https://us-central1-gen-lang-client-0746010330.cloudfunctions.net/scrape_website';
 
 /**
- * Scrapes a website using Firebase Cloud Function
- * Falls back to mock data if function is not available or fails
+ * Scrapes a website using Firebase Function scraper service
+ * Uses direct HTTP call to handle raw JSON response (not wrapped in 'data' field)
+ * Throws error if service fails - no fallback to mock data
  */
 export const scrapeSite = async (url: string): Promise<ScrapedData> => {
-    console.log(`Scraping website: ${url}`);
+    console.log(`=== SCRAPING WEBSITE ===`);
+    console.log(`URL: ${url}`);
     
     try {
-        // Try to use Firebase Cloud Function
-        const scrapeWebsite = httpsCallable(functions, 'scrapeWebsite');
-        const result = await scrapeWebsite({ url });
-        const data = result.data as ScrapedData;
+        // Get auth token for authenticated requests
+        const user = auth.currentUser;
+        let authToken: string | null = null;
         
-        console.log('Successfully scraped website via Cloud Function');
-        return data;
-    } catch (error: any) {
-        console.warn('Cloud Function scraping failed, falling back to mock data:', error.message);
-        
-        // Fallback to mock data
-        await new Promise(resolve => setTimeout(resolve, 1000));
-
-        if (url.includes("fail")) {
-            throw new Error("Sivuston analysointi epäonnistui. Palvelin ei vastannut.");
+        if (user) {
+            authToken = await user.getIdToken();
+            console.log('Using authenticated request');
+        } else {
+            console.log('Using unauthenticated request');
         }
         
-        const { html: mockHtmlContent, title, text } = getMockHtmlForUrl(url);
-        const foundLogos = new Set<string>();
-
-        const imgRegex = /<img[^>]+src="([^">]+)"[^>]*>/g;
-        let match;
-        while ((match = imgRegex.exec(mockHtmlContent)) !== null) {
-          const src = match[1];
-          const fullTag = match[0].toLowerCase();
-          const isLikelyLogo = fullTag.includes('logo') || src.includes('logo');
-          if (isLikelyLogo) {
-            const absoluteUrl = toAbsoluteUrl(url, src);
-            if (absoluteUrl) foundLogos.add(absoluteUrl);
-          }
-        }
+        // Call Firebase Function directly via HTTP
+        console.log('Calling Firebase Function via HTTP:', FUNCTION_URL);
         
-        const faviconRegex = /<link[^>]+rel="[^"]*icon[^"]*"[^>]+href="([^">]+)"/g;
-        const faviconMatch = faviconRegex.exec(mockHtmlContent);
-        if (faviconMatch) {
-          const absoluteUrl = toAbsoluteUrl(url, faviconMatch[1]);
-          if(absoluteUrl) foundLogos.add(absoluteUrl);
-        }
-        
-        try {
-            const hostname = new URL(url).hostname;
-            foundLogos.add(`https://logo.clearbit.com/${hostname}`);
-        } catch(e) { /* ignore invalid URLs */ }
-
-        return {
-            title: title,
-            text: text,
-            logos: Array.from(foundLogos),
-            colors: [ '#4f46e5', '#1f2937', '#3b82f6', '#10b981', '#f59e0b' ],
+        const headers: HeadersInit = {
+            'Content-Type': 'application/json',
         };
+        
+        if (authToken) {
+            headers['Authorization'] = `Bearer ${authToken}`;
+        }
+        
+        const response = await fetch(FUNCTION_URL, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify({ url }),
+        });
+        
+        console.log('Response status:', response.status);
+        console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('HTTP error response:', errorText);
+            throw new Error(`HTTP ${response.status}: ${errorText}`);
+        }
+        
+        // Parse JSON response directly (not wrapped in 'data' field)
+        const data: ScrapedData = await response.json();
+        
+        console.log('Raw JSON response from Firebase Function:', JSON.stringify(data, null, 2));
+        console.log('Data type:', typeof data);
+        console.log('Data keys:', data ? Object.keys(data) : 'null');
+        
+        // Validate response structure - ensure arrays exist and are arrays
+        if (!data || typeof data !== 'object') {
+            console.error('Validation failed: data is not an object', data);
+            throw new Error('Invalid response: data is not an object');
+        }
+        
+        if (!data.title || typeof data.title !== 'string') {
+            console.error('Validation failed: title is missing or not a string', data.title);
+            throw new Error('Invalid response: title is missing or not a string');
+        }
+        
+        if (!data.text || typeof data.text !== 'string') {
+            console.error('Validation failed: text is missing or not a string', typeof data.text);
+            throw new Error('Invalid response: text is missing or not a string');
+        }
+        
+        // Ensure logos and colors are arrays
+        const logos = Array.isArray(data.logos) ? data.logos : [];
+        const colors = Array.isArray(data.colors) ? data.colors : [];
+        
+        console.log(`=== VALIDATION SUCCESS ===`);
+        console.log(`Title: ${data.title}`);
+        console.log(`Logos: ${logos.length} items`);
+        console.log(`Colors: ${colors.length} items`);
+        console.log(`Text length: ${data.text.length} characters`);
+        
+        // Return normalized data
+        const normalizedData: ScrapedData = {
+            title: data.title,
+            text: data.text,
+            logos: logos,
+            colors: colors.length > 0 ? colors : ['#4f46e5', '#1f2937', '#3b82f6', '#10b981', '#f59e0b']
+        };
+        
+        console.log('=== SCRAPING SUCCESS ===');
+        console.log('Normalized data:', JSON.stringify(normalizedData, null, 2));
+        return normalizedData;
+    } catch (error: any) {
+        console.error('=== SCRAPING FAILED ===');
+        console.error('Error:', error);
+        console.error('Error type:', typeof error);
+        console.error('Error message:', error.message);
+        console.error('Error code:', error.code);
+        console.error('Error details:', error.details);
+        console.error('Full error object:', JSON.stringify(error, null, 2));
+        
+        // Throw error instead of using mock data
+        const errorMessage = error.message || error.code || 'Tuntematon virhe';
+        throw new Error(`Sivuston analysointi epäonnistui: ${errorMessage}`);
     }
 };
 

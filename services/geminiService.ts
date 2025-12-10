@@ -240,12 +240,23 @@ export const getConversationSummary = async (conversation: Conversation): Promis
 
 export const generateTrainingDataFromText = async (text: string, title: string): Promise<Omit<KnowledgeSource, 'id'>[]> => {
     try {
+        console.log(`Generating training data from text. Title: ${title}, Text length: ${text.length}`);
+        
+        if (!text || text.trim().length === 0) {
+            console.warn('Empty text provided to generateTrainingDataFromText');
+            return [];
+        }
+        
         const ai = getAiClient();
+        
+        // Use first 15000 characters to avoid token limits
+        const textToUse = text.substring(0, 15000);
+        console.log(`Using ${textToUse.length} characters for Q&A generation`);
         
         const prompt = `From the following text from the website "${title}", generate a list of 5-10 frequently asked questions and their corresponding answers. The questions should be things a customer would likely ask.
 
     Text:
-    ${text.substring(0, 15000)}
+    ${textToUse}
 
     Return the result as a JSON array of objects, where each object has a "question" and "answer" property.`;
 

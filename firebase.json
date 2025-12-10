@@ -1,7 +1,12 @@
 {
-  "functions": {
-    "source": "functions"
-  },
+  "functions": [
+    {
+      "source": "functions-python-simple",
+      "codebase": "python-scraper-simple",
+      "runtime": "python311"
+    }
+  
+  ],
   "firestore": {
     "rules": "firestore.rules"
   },
@@ -20,4 +25,3 @@
     ]
   }
 }
-
