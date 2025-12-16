@@ -1,8 +1,9 @@
+
 import { ScrapedData } from '../types.ts';
 import { auth } from './firebase.ts';
 
 // Firebase Function URL - replace with your actual function URL
-const FUNCTION_URL = 'https://us-central1-gen-lang-client-0746010330.cloudfunctions.net/scrape_website';
+const FUNCTION_URL = process.env.SCRAPE_URL;
 
 /**
  * Scrapes a website using Firebase Function scraper service

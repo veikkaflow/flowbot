@@ -4,6 +4,7 @@ import { scrapeSite } from '../services/siteScraperService.ts';
 import { generateTrainingDataFromText } from '../services/geminiService.ts';
 import { botTemplates } from '../data/defaultBots.ts';
 import { auth } from '../services/firebase.ts';
+import { getStarterAvatars } from '../data/avatars.ts';
 
 export const useAppSetup = (onSetupComplete: (bot: Omit<Bot, 'id'>) => void) => {
     const [step, setStep] = useState(1);
@@ -99,7 +100,7 @@ export const useAppSetup = (onSetupComplete: (bot: Omit<Bot, 'id'>) => void) => 
         }
     }, []);
     
-    const finalizeSetup = useCallback(() => {
+    const finalizeSetup = useCallback(async () => {
         const user = auth.currentUser;
         if (!user) {
             setError("Käyttäjä ei ole kirjautunut sisään.");
@@ -110,6 +111,20 @@ export const useAppSetup = (onSetupComplete: (bot: Omit<Bot, 'id'>) => void) => 
         if (!template) {
             setError("Valittua mallipohjaa ei löytynyt.");
             return;
+        }
+
+        // Hae starter-avatit Firebase Storagesta
+        let starterAvatars;
+        try {
+            starterAvatars = await getStarterAvatars();
+        } catch (error) {
+            console.error('Error loading starter avatars:', error);
+            // Käytä tyhjiä listoja jos kuvia ei löydy
+            starterAvatars = {
+                userAvatars: [],
+                botAvatars: [],
+                agentAvatars: [],
+            };
         }
 
         console.log('=== FINALIZING SETUP ===');
@@ -146,6 +161,22 @@ export const useAppSetup = (onSetupComplete: (bot: Omit<Bot, 'id'>) => void) => 
             console.log('First Q&A item:', qnaDataWithIds[0]);
         }
         
+        // Käytä starter-avatit jos saatavilla, muuten käytä templaten avatareja
+        const userAvatarGallery = starterAvatars.userAvatars.length > 0 
+            ? starterAvatars.userAvatars 
+            : template.settings.avatarSettings.userAvatarGallery;
+        const botAvatarGallery = starterAvatars.botAvatars.length > 0 
+            ? starterAvatars.botAvatars 
+            : template.settings.avatarSettings.botAvatarGallery;
+        const agentAvatarGallery = starterAvatars.agentAvatars.length > 0 
+            ? starterAvatars.agentAvatars 
+            : template.settings.avatarSettings.agentAvatarGallery;
+
+        // Valitse ensimmäinen kuva jos lista ei ole tyhjä
+        const selectedUserAvatar = userAvatarGallery[0] || template.settings.avatarSettings.selectedUserAvatar;
+        const selectedBotAvatar = botAvatarGallery[0] || template.settings.avatarSettings.selectedBotAvatar;
+        const selectedAgentAvatar = agentAvatarGallery[0] || template.settings.avatarSettings.selectedAgentAvatar;
+
         const newBot: Omit<Bot, 'id'> = {
             name: brandName || scrapedData?.title || 'Uusi Botti',
             ownerId: user.uid,
@@ -160,6 +191,14 @@ export const useAppSetup = (onSetupComplete: (bot: Omit<Bot, 'id'>) => void) => 
                     primaryColor: finalPrimaryColor,
                     headerColor: finalHeaderColor,
                     websiteUrl: websiteUrl,
+                },
+                avatarSettings: {
+                    userAvatarGallery: userAvatarGallery,
+                    botAvatarGallery: botAvatarGallery,
+                    agentAvatarGallery: agentAvatarGallery,
+                    selectedUserAvatar: selectedUserAvatar,
+                    selectedBotAvatar: selectedBotAvatar,
+                    selectedAgentAvatar: selectedAgentAvatar,
                 },
                 qnaData: [
                     ...(template.settings.qnaData || []),

@@ -1,17 +1,25 @@
 // FIX: This file was created to resolve "Cannot find name" and module resolution errors.
 import { useSettings } from './useSettings.ts';
 import { Agent } from '../types.ts';
-import { agentAvatars } from '../data/avatars.ts';
+import { useBotContext } from '../context/BotContext.tsx';
 
 export const useAgents = () => {
     const { settings: agents, setSettings } = useSettings('agents');
+    const { activeBot } = useBotContext();
 
     const addAgent = () => {
         if (agents) {
+            // Käytä aktiivisen botin agent-avatareja
+            const agentAvatars = activeBot?.settings.avatarSettings?.agentAvatarGallery || [];
+            const avatarIndex = agentAvatars.length > 0 
+                ? agents.length % agentAvatars.length 
+                : 0;
+            const avatar = agentAvatars[avatarIndex] || '';
+            
             const newAgent: Agent = {
                 id: `agent_${Date.now()}`,
                 name: 'Uusi Agentti',
-                avatar: agentAvatars[agents.length % agentAvatars.length], // Cycle through default avatars
+                avatar: avatar,
             };
             setSettings([...agents, newAgent]);
         }

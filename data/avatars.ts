@@ -1,38 +1,47 @@
-export const userAvatars: string[] = [
-    'https://i.pravatar.cc/150?u=a042581f4e29026704d',
-    'https://i.pravatar.cc/150?u=a042581f4e29026705d',
-    'https://i.pravatar.cc/150?u=a042581f4e29026706d',
-    'https://i.pravatar.cc/150?u=a042581f4e29026707d',
-    'https://i.pravatar.cc/150?u=a042581f4e29026708d',
-    'https://i.pravatar.cc/150?u=a042581f4e29026709d',
-    'https://i.pravatar.cc/150?u=a042581f4e29026710d',
-    'https://i.pravatar.cc/150?u=a042581f4e29026711d',
-    'https://i.pravatar.cc/150?u=a042581f4e29026712d',
-    'https://i.pravatar.cc/150?u=a042581f4e29026713d',
-];
+import { getAllStarterAvatars } from '../services/imageStorageService.ts';
 
-export const botAvatars: string[] = [
-    'https://api.dicebear.com/8.x/bottts/svg?seed=Casper',
-    'https://api.dicebear.com/8.x/bottts/svg?seed=Aneka',
-    'https://api.dicebear.com/8.x/bottts/svg?seed=Mimi',
-    'https://api.dicebear.com/8.x/bottts/svg?seed=Callie',
-    'https://api.dicebear.com/8.x/bottts/svg?seed=Garfield',
-    'https://api.dicebear.com/8.x/bottts/svg?seed=Leo',
-    'https://api.dicebear.com/8.x/bottts/svg?seed=Midnight',
-    'https://api.dicebear.com/8.x/bottts/svg?seed=Misty',
-    'https://api.dicebear.com/8.x/bottts/svg?seed=Patches',
-    'https://api.dicebear.com/8.x/bottts/svg?seed=Zoe',
-];
+// Cache for starter avatars to avoid multiple fetches
+let cachedAvatars: {
+    userAvatars: string[];
+    botAvatars: string[];
+    agentAvatars: string[];
+} | null = null;
 
-export const agentAvatars: string[] = [
-    'https://i.pravatar.cc/150?u=b042581f4e29026704d',
-    'https://i.pravatar.cc/150?u=b042581f4e29026705d',
-    'https://i.pravatar.cc/150?u=b042581f4e29026706d',
-    'https://i.pravatar.cc/150?u=b042581f4e29026707d',
-    'https://i.pravatar.cc/150?u=b042581f4e29026708d',
-    'https://i.pravatar.cc/150?u=b042581f4e29026709d',
-    'https://i.pravatar.cc/150?u=b042581f4e29026710d',
-    'https://i.pravatar.cc/150?u=b042581f4e29026711d',
-    'https://i.pravatar.cc/150?u=b042581f4e29026712d',
-    'https://i.pravatar.cc/150?u=b042581f4e29026713d',
-];
+// Fallback avatars if Firebase Storage doesn't have any
+const fallbackUserAvatars: string[] = [];
+const fallbackBotAvatars: string[] = [];
+const fallbackAgentAvatars: string[] = [];
+
+/**
+ * Gets starter avatars from Firebase Storage base folder
+ * Falls back to empty arrays if not found
+ */
+export const getStarterAvatars = async (): Promise<{
+    userAvatars: string[];
+    botAvatars: string[];
+    agentAvatars: string[];
+}> => {
+    // Return cached if available
+    if (cachedAvatars) {
+        return cachedAvatars;
+    }
+    
+    try {
+        const avatars = await getAllStarterAvatars();
+        // Cache the result
+        cachedAvatars = avatars;
+        return avatars;
+    } catch (error) {
+        console.error('Error loading starter avatars, using fallback:', error);
+        return {
+            userAvatars: fallbackUserAvatars,
+            botAvatars: fallbackBotAvatars,
+            agentAvatars: fallbackAgentAvatars,
+        };
+    }
+};
+
+// Export empty arrays as default (will be populated when getStarterAvatars is called)
+export const userAvatars: string[] = [];
+export const botAvatars: string[] = [];
+export const agentAvatars: string[] = [];

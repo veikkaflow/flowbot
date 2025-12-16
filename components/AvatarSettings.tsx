@@ -1,9 +1,11 @@
 
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { useSettings } from '../hooks/useSettings.ts';
 import { User, Bot as BotIcon, UserCheck, UploadCloud, Plus } from './Icons.tsx';
 import { useLanguage } from '../context/LanguageContext.tsx';
 import { useNotification } from '../context/NotificationContext.tsx';
+import { useBotContext } from '../context/BotContext.tsx';
+import { uploadAvatarImage } from '../services/imageStorageService.ts';
 
 const AvatarGallery: React.FC<{
     title: string;
@@ -50,33 +52,47 @@ const AvatarSettings: React.FC = () => {
     const { settings: avatarSettings, updateSettings } = useSettings('avatarSettings');
     const { t } = useLanguage();
     const { addNotification } = useNotification();
+    const { activeBot } = useBotContext();
     const agentAvatarUploadRef = useRef<HTMLInputElement>(null);
     const botAvatarUploadRef = useRef<HTMLInputElement>(null);
     const userAvatarUploadRef = useRef<HTMLInputElement>(null);
+    const [uploading, setUploading] = useState<string | null>(null);
+    
     if (!avatarSettings) return null;
 
-    const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>, type: 'agent' | 'bot' | 'user') => {
+    const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>, type: 'agent' | 'bot' | 'user') => {
         const file = e.target.files?.[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const base64String = reader.result as string;
-                const galleryKey = `${type}AvatarGallery` as keyof typeof avatarSettings;
-                const selectedKey = `selected${type.charAt(0).toUpperCase() + type.slice(1)}Avatar` as keyof typeof avatarSettings;
-                const newGallery = [...(avatarSettings[galleryKey] as string[]), base64String];
-                updateSettings({ 
-                    [galleryKey]: newGallery, 
-                    [selectedKey]: base64String 
-                });
-                addNotification({ message: `${type}-avatari ladattu onnistuneesti.`, type: 'success' });
-                // Reset the input so the same file can be uploaded again if needed
-                e.target.value = '';
-            };
-            reader.onerror = () => {
-                addNotification({ message: `${type}-avataria ei voitu ladata.`, type: 'error' });
-                e.target.value = '';
-            };
-            reader.readAsDataURL(file);
+        if (!file) return;
+        
+        if (!activeBot?.id) {
+            addNotification({ message: 'Botti ei ole valittu. Valitse botti ensin.', type: 'error' });
+            e.target.value = '';
+            return;
+        }
+
+        setUploading(type);
+        
+        try {
+            // Upload to Firebase Storage
+            const downloadURL = await uploadAvatarImage(file, activeBot.id, type);
+            
+            // Update settings with the Firebase Storage URL
+            const galleryKey = `${type}AvatarGallery` as keyof typeof avatarSettings;
+            const selectedKey = `selected${type.charAt(0).toUpperCase() + type.slice(1)}Avatar` as keyof typeof avatarSettings;
+            const newGallery = [...(avatarSettings[galleryKey] as string[]), downloadURL];
+            await updateSettings({ 
+                [galleryKey]: newGallery, 
+                [selectedKey]: downloadURL 
+            });
+            
+            addNotification({ message: `${type}-avatari ladattu onnistuneesti Firebase Storageen.`, type: 'success' });
+        } catch (error) {
+            console.error('Error uploading avatar:', error);
+            addNotification({ message: `${type}-avataria ei voitu ladata.`, type: 'error' });
+        } finally {
+            setUploading(null);
+            // Reset the input so the same file can be uploaded again if needed
+            e.target.value = '';
         }
     };
 
@@ -132,26 +148,35 @@ const AvatarSettings: React.FC = () => {
                                     <img src={avatar} alt="avatar" className="w-full h-full object-cover rounded-full" />
                                 </button>
                             ))}
-                            <input type="file" ref={userAvatarUploadRef} onChange={(e) => handleAvatarUpload(e, 'user')} accept="image/*" className="hidden" />
+                            <input type="file" ref={userAvatarUploadRef} onChange={(e) => handleAvatarUpload(e, 'user')} accept="image/*" className="hidden" disabled={uploading === 'user'} />
                             <button 
                                 onClick={() => userAvatarUploadRef.current?.click()} 
-                                className="w-16 h-16 rounded-lg border-2 border-dashed flex flex-col items-center justify-center transition-colors"
+                                disabled={uploading === 'user'}
+                                className="w-16 h-16 rounded-lg border-2 border-dashed flex flex-col items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 style={{
                                     backgroundColor: 'var(--admin-sidebar-bg, #374151)',
                                     borderColor: 'var(--admin-border, #374151)',
                                     color: 'var(--admin-text-secondary, #d1d5db)'
                                 }}
                                 onMouseEnter={(e) => {
-                                    e.currentTarget.style.borderColor = 'var(--admin-text-secondary, #d1d5db)';
-                                    e.currentTarget.style.color = 'var(--admin-text-primary, #f3f4f6)';
+                                    if (uploading !== 'user') {
+                                        e.currentTarget.style.borderColor = 'var(--admin-text-secondary, #d1d5db)';
+                                        e.currentTarget.style.color = 'var(--admin-text-primary, #f3f4f6)';
+                                    }
                                 }}
                                 onMouseLeave={(e) => {
                                     e.currentTarget.style.borderColor = 'var(--admin-border, #374151)';
                                     e.currentTarget.style.color = 'var(--admin-text-secondary, #d1d5db)';
                                 }}
                             >
-                                <UploadCloud className="w-5 h-5" />
-                                <span className="text-xs mt-0.5">{t('appr.upload')}</span>
+                                {uploading === 'user' ? (
+                                    <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                    <>
+                                        <UploadCloud className="w-5 h-5" />
+                                        <span className="text-xs mt-0.5">{t('appr.upload')}</span>
+                                    </>
+                                )}
                             </button>
                             <button 
                                 onClick={() => handleAddAvatarFromUrl('user')} 
@@ -206,26 +231,35 @@ const AvatarSettings: React.FC = () => {
                                     <img src={avatar} alt="avatar" className="w-full h-full object-cover rounded-full" />
                                 </button>
                             ))}
-                            <input type="file" ref={botAvatarUploadRef} onChange={(e) => handleAvatarUpload(e, 'bot')} accept="image/*" className="hidden" />
+                            <input type="file" ref={botAvatarUploadRef} onChange={(e) => handleAvatarUpload(e, 'bot')} accept="image/*" className="hidden" disabled={uploading === 'bot'} />
                             <button 
                                 onClick={() => botAvatarUploadRef.current?.click()} 
-                                className="w-16 h-16 rounded-lg border-2 border-dashed flex flex-col items-center justify-center transition-colors"
+                                disabled={uploading === 'bot'}
+                                className="w-16 h-16 rounded-lg border-2 border-dashed flex flex-col items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 style={{
                                     backgroundColor: 'var(--admin-sidebar-bg, #374151)',
                                     borderColor: 'var(--admin-border, #374151)',
                                     color: 'var(--admin-text-secondary, #d1d5db)'
                                 }}
                                 onMouseEnter={(e) => {
-                                    e.currentTarget.style.borderColor = 'var(--admin-text-secondary, #d1d5db)';
-                                    e.currentTarget.style.color = 'var(--admin-text-primary, #f3f4f6)';
+                                    if (uploading !== 'bot') {
+                                        e.currentTarget.style.borderColor = 'var(--admin-text-secondary, #d1d5db)';
+                                        e.currentTarget.style.color = 'var(--admin-text-primary, #f3f4f6)';
+                                    }
                                 }}
                                 onMouseLeave={(e) => {
                                     e.currentTarget.style.borderColor = 'var(--admin-border, #374151)';
                                     e.currentTarget.style.color = 'var(--admin-text-secondary, #d1d5db)';
                                 }}
                             >
-                                <UploadCloud className="w-5 h-5" />
-                                <span className="text-xs mt-0.5">{t('appr.upload')}</span>
+                                {uploading === 'bot' ? (
+                                    <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                    <>
+                                        <UploadCloud className="w-5 h-5" />
+                                        <span className="text-xs mt-0.5">{t('appr.upload')}</span>
+                                    </>
+                                )}
                             </button>
                             <button 
                                 onClick={() => handleAddAvatarFromUrl('bot')} 
@@ -280,26 +314,35 @@ const AvatarSettings: React.FC = () => {
                                     <img src={avatar} alt="avatar" className="w-full h-full object-cover rounded-full" />
                                 </button>
                             ))}
-                            <input type="file" ref={agentAvatarUploadRef} onChange={(e) => handleAvatarUpload(e, 'agent')} accept="image/*" className="hidden" />
+                            <input type="file" ref={agentAvatarUploadRef} onChange={(e) => handleAvatarUpload(e, 'agent')} accept="image/*" className="hidden" disabled={uploading === 'agent'} />
                             <button 
                                 onClick={() => agentAvatarUploadRef.current?.click()} 
-                                className="w-16 h-16 rounded-lg border-2 border-dashed flex flex-col items-center justify-center transition-colors"
+                                disabled={uploading === 'agent'}
+                                className="w-16 h-16 rounded-lg border-2 border-dashed flex flex-col items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 style={{
                                     backgroundColor: 'var(--admin-sidebar-bg, #374151)',
                                     borderColor: 'var(--admin-border, #374151)',
                                     color: 'var(--admin-text-secondary, #d1d5db)'
                                 }}
                                 onMouseEnter={(e) => {
-                                    e.currentTarget.style.borderColor = 'var(--admin-text-secondary, #d1d5db)';
-                                    e.currentTarget.style.color = 'var(--admin-text-primary, #f3f4f6)';
+                                    if (uploading !== 'agent') {
+                                        e.currentTarget.style.borderColor = 'var(--admin-text-secondary, #d1d5db)';
+                                        e.currentTarget.style.color = 'var(--admin-text-primary, #f3f4f6)';
+                                    }
                                 }}
                                 onMouseLeave={(e) => {
                                     e.currentTarget.style.borderColor = 'var(--admin-border, #374151)';
                                     e.currentTarget.style.color = 'var(--admin-text-secondary, #d1d5db)';
                                 }}
                             >
-                                <UploadCloud className="w-5 h-5" />
-                                <span className="text-xs mt-0.5">{t('appr.upload')}</span>
+                                {uploading === 'agent' ? (
+                                    <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                    <>
+                                        <UploadCloud className="w-5 h-5" />
+                                        <span className="text-xs mt-0.5">{t('appr.upload')}</span>
+                                    </>
+                                )}
                             </button>
                             <button 
                                 onClick={() => handleAddAvatarFromUrl('agent')} 
