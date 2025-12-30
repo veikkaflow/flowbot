@@ -71,53 +71,57 @@ export const useBotManager = () => {
             
             if (userRole === 'admin' || userRole === 'superadmin') {
                 // Admin sees ALL bots, regardless of allowedBotIds
-                // Use getDocs instead of onSnapshot for admin to avoid permission issues
-                // We'll set up a polling mechanism or use onSnapshot with proper error handling
+                // Use onSnapshot for real-time updates (admin should have read permissions)
                 if (unsubscribeBots) unsubscribeBots();
                 
-                const loadAdminBots = async () => {
-                    try {
-                        const querySnapshot = await getDocs(botsCollection);
-                        const botsFromDb = querySnapshot.docs.map(doc => doc.data());
-                        console.log(`Admin: Found ${botsFromDb.length} bots total:`, botsFromDb.map(b => b.name));
-                        setBots(botsFromDb);
-
-                        // Set active bot on first load or if current active bot is not in list
-                        if (!isInitialized) {
-                            const storedBotId = localStorage.getItem(LAST_ACTIVE_BOT_KEY);
-                            if (storedBotId && botsFromDb.some(b => b.id === storedBotId)) {
-                                setActiveBotIdState(storedBotId);
-                            } else if (botsFromDb.length > 0) {
-                                setActiveBotIdState(botsFromDb[0].id);
-                            }
-                            setIsInitialized(true);
-                        } else if (activeBotIdRef.current && !botsFromDb.some(b => b.id === activeBotIdRef.current)) {
-                            // If current active bot is no longer available, switch to first bot
-                            if (botsFromDb.length > 0) {
-                                setActiveBotIdState(botsFromDb[0].id);
-                            } else {
-                                setActiveBotIdState(null);
+                // Set up real-time listener for all bots
+                unsubscribeBots = onSnapshot(botsCollection, (querySnapshot) => {
+                    const botsFromDb = querySnapshot.docs.map(doc => doc.data());
+                    console.log(`Admin: Found ${botsFromDb.length} bots total:`, botsFromDb.map(b => b.name));
+                    
+                    // Only update state if bots actually changed to prevent unnecessary re-renders
+                    setBots(prevBots => {
+                        const prevIds = new Set(prevBots.map(b => b.id));
+                        const newIds = new Set(botsFromDb.map(b => b.id));
+                        const idsChanged = prevIds.size !== newIds.size || 
+                            botsFromDb.some(b => !prevIds.has(b.id)) ||
+                            prevBots.some(b => !newIds.has(b.id));
+                        
+                        // Also check if any bot data changed
+                        if (!idsChanged) {
+                            const dataChanged = botsFromDb.some(newBot => {
+                                const oldBot = prevBots.find(b => b.id === newBot.id);
+                                return !oldBot || JSON.stringify(oldBot) !== JSON.stringify(newBot);
+                            });
+                            if (!dataChanged) {
+                                return prevBots; // No changes, return previous state
                             }
                         }
-                    } catch (error) {
-                        console.error("Error fetching bots for admin:", error);
+                        
+                        return botsFromDb;
+                    });
+
+                    // Set active bot on first load or if current active bot is not in list
+                    if (!isInitialized) {
+                        const storedBotId = localStorage.getItem(LAST_ACTIVE_BOT_KEY);
+                        if (storedBotId && botsFromDb.some(b => b.id === storedBotId)) {
+                            setActiveBotIdState(storedBotId);
+                        } else if (botsFromDb.length > 0) {
+                            setActiveBotIdState(botsFromDb[0].id);
+                        }
                         setIsInitialized(true);
+                    } else if (activeBotIdRef.current && !botsFromDb.some(b => b.id === activeBotIdRef.current)) {
+                        // If current active bot is no longer available, switch to first bot
+                        if (botsFromDb.length > 0) {
+                            setActiveBotIdState(botsFromDb[0].id);
+                        } else {
+                            setActiveBotIdState(null);
+                        }
                     }
-                };
-
-                // Load bots immediately
-                loadAdminBots();
-
-                // Set up polling to refresh bots every 5 seconds for admin
-                // This provides near real-time updates without requiring onSnapshot permissions
-                const pollInterval = setInterval(() => {
-                    loadAdminBots();
-                }, 5000);
-
-                // Store cleanup function
-                unsubscribeBots = () => {
-                    clearInterval(pollInterval);
-                };
+                }, (error) => {
+                    console.error("Error listening to bots for admin:", error);
+                    setIsInitialized(true);
+                });
             } else {
                  // Non-admin users: get owned bots + allowed bots
                  const ownedBotsQuery = query(botsCollection, where('ownerId', '==', user.uid));
@@ -339,7 +343,7 @@ export const useBotManager = () => {
             });
             allowedBotUnsubscribesRef.current.clear();
         };
-    }, [user?.uid, isInitialized]);
+    }, [user?.uid]); // Removed isInitialized from dependencies to prevent infinite loops
 
     const setActiveBotId = useCallback((id: string | null) => {
         setActiveBotIdState(id);
