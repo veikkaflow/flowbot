@@ -2,7 +2,7 @@
 import React, { useState, useCallback } from 'react';
 import ViewSwitcher, { SwitcherViewItem } from './ViewSwitcher.tsx';
 import DashboardView from './DashboardView.tsx';
-import InboxView from './InboxView.tsx';
+import InboxDashboard from './InboxDashboard.tsx';
 import LeadsView from './LeadsView.tsx'; // Import LeadsView
 import SettingsDashboard from './SettingsDashboard.tsx';
 import AnalysisDashboard from './AnalysisDashboard.tsx';
@@ -37,7 +37,7 @@ const AdminView: React.FC = () => {
             case 'dashboard':
                 return <DashboardView onSwitchView={handleSwitchView} />;
             case 'inbox':
-                return <InboxView />;
+                return <InboxDashboard />;
             case 'leads': // Render LeadsView
                 return <LeadsView />;
             case 'settings':

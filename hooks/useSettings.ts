@@ -1,4 +1,3 @@
-// FIX: This file was created to resolve "Cannot find name" and module resolution errors.
 import { useBotContext } from '../context/BotContext.tsx';
 import { AppSettings, Bot } from '../types.ts';
 
@@ -13,8 +12,7 @@ export const useSettings = <T extends SettingsKey>(settingsKey: T) => {
         if (!activeBot) return;
         
         try {
-            // FIX: Correctly handle updates for both object and primitive settings.
-            // This prevents a crash when trying to spread a non-object value like a boolean.
+            // Correctly handle updates for both object and primitive settings
             const currentSetting = activeBot.settings[settingsKey];
             let finalSetting: AppSettings[T];
             

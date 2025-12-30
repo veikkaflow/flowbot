@@ -1,6 +1,5 @@
 
 // components/ChatWidget.tsx
-// FIX: Corrected typo in React import statement.
 import React, { useState, useEffect, useRef } from 'react';
 import { useBotContext } from '../context/BotContext.tsx';
 import { useConversationContext } from '../context/ConversationContext.tsx';

@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { Bot, KnowledgeSource, ScrapedData } from '../types.ts';
-import { scrapeSite } from '../services/siteScraperService.ts';
+import { scrapeWebsite, ScrapeMode } from '../services/scraperService.ts';
 import { generateTrainingDataFromText } from '../services/geminiService.ts';
 import { botTemplates } from '../data/defaultBots.ts';
 import { auth } from '../services/firebase.ts';
@@ -20,9 +20,10 @@ export const useAppSetup = (onSetupComplete: (bot: Omit<Bot, 'id'>) => void) => 
     const [selectedColor, setSelectedColor] = useState<string | null>(null);
     const [selectedHeaderColor, setSelectedHeaderColor] = useState<string | null>(null);
     const [selectedTemplateId, setSelectedTemplateId] = useState<string>(botTemplates[0].id);
+    const [scrapeMode, setScrapeMode] = useState<ScrapeMode>('default');
 
 
-    const startScraping = useCallback(async (url: string) => {
+    const startScraping = useCallback(async (url: string, mode: ScrapeMode = 'default') => {
         setIsLoading(true);
         setError(null);
         try {
@@ -32,7 +33,7 @@ export const useAppSetup = (onSetupComplete: (bot: Omit<Bot, 'id'>) => void) => 
             // Store URL for later use
             setWebsiteUrl(url);
             
-            const data = await scrapeSite(url);
+            const data = await scrapeWebsite(url, mode, true);
             console.log('=== SCRAPED DATA RECEIVED ===');
             console.log('Full data:', JSON.stringify(data, null, 2));
             console.log('Title:', data.title);

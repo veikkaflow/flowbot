@@ -154,6 +154,7 @@ export interface KnowledgeSource {
     name: string;
     content: string;
     fileUrl?: string; // URL to the original file in storage (for PDFs)
+    additionalData?: Record<string, any>;
 }
 
 // User Management
@@ -180,6 +181,8 @@ export interface ScrapedData {
     text: string;
     logos: string[];
     colors: string[];
+    //vaihtuvat listat tulsotus moden mukaan
+    additionalData?: Record<string, any>;
 }
 
 export interface AnalysisResult {

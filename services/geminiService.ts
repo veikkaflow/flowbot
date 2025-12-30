@@ -2,7 +2,7 @@
 // services/geminiService.ts
 
 import { GoogleGenAI, Type, FunctionDeclaration } from "@google/genai";
-import { AppSettings, Conversation, KnowledgeSource, AnalysisResult } from '../types.ts';
+import { AppSettings, Conversation, KnowledgeSource, AnalysisResult, Message } from '../types.ts';
 
 
 const getAiClient = () => {
@@ -67,31 +67,238 @@ async function getProductsFromApi(category?: string, searchTerm?: string) {
     }
 }
 
+// Dynaaminen RAG: Analysoi tarvitaanko knowledge base -tietoja vastaamiseen
+async function needsKnowledgeBase(
+    userQuestion: string,
+    conversationHistory: Message[]
+): Promise<boolean> {
+    try {
+        const ai = getAiClient();
+        
+        // Analysoidaan viesti ja keskusteluhistoria
+        const conversationContext = conversationHistory
+            .slice(-4) // Viimeiset 4 viestiä
+            .map(m => `${m.sender}: ${m.text}`)
+            .join('\n');
+        
+        const analysisPrompt = `Analysoi seuraava käyttäjän kysymys ja keskusteluhistoria.
 
-const buildChatContents = (conversation: Conversation, settings: AppSettings) => {
+Keskusteluhistoria:
+${conversationContext || '(Ei aiempaa keskustelua)'}
+
+Uusi kysymys: "${userQuestion}"
+
+Päätä, tarvitaanko tietopankin tietoja vastataksesi tähän kysymykseen.
+Tietopankkia tarvitaan jos:
+- Kysymys koskee tuotteita, palveluja tai yrityksen tietoja
+- Kysymys vaatii spesifistä tietoa (hinnat, tekniset tiedot, dokumentit, jne.)
+- Kysymys liittyy dokumentteihin tai tiedostoihin tietopankissa
+
+Tietopankkia EI tarvita jos:
+- Kysymys on yleinen tervehdys tai kiitos
+- Vastaus löytyy asetuksista kuten qa osiosta tai system instructionissa
+- Kysymys on keskustelua tai small talk
+- Vastaus voidaan antaa yleisellä tiedolla ilman dokumentteja
+
+Palauta vastaus JSON-muodossa: { "needsKnowledgeBase": true/false, "reason": "lyhyt selitys" }`;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: analysisPrompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        needsKnowledgeBase: {
+                            type: Type.BOOLEAN,
+                            description: "Tarvitaanko tietopankkia"
+                        },
+                        reason: {
+                            type: Type.STRING,
+                            description: "Lyhyt selitys päätökselle"
+                        }
+                    },
+                    required: ['needsKnowledgeBase', 'reason']
+                }
+            }
+        });
+        
+        const result = JSON.parse(response.text);
+        console.log(`[RAG] Knowledge base needed: ${result.needsKnowledgeBase}, reason: ${result.reason}`);
+        return result.needsKnowledgeBase;
+    } catch (error) {
+        console.error("Error analyzing if knowledge base is needed:", error);
+        // Fallback: jos analyysi epäonnistuu, käytetään tietopankkia (turvallinen oletus)
+        return true;
+    }
+}
+
+// Dynaaminen RAG: Valitse relevantit knowledge source -tiedostot käyttäjän kysymyksen perusteella
+async function selectRelevantKnowledgeSources(
+    userQuestion: string,
+    knowledgeBase: KnowledgeSource[]
+): Promise<string[]> {
+    try {
+        const ai = getAiClient();
+        
+        // Jos knowledge base on pieni (alle 5 tiedostoa), käytetään kaikkia
+        if (knowledgeBase.length <= 5) {
+            console.log(`[RAG] Small knowledge base (${knowledgeBase.length} items), using all`);
+            return knowledgeBase.map((_, idx) => idx.toString());
+        }
+        
+        // Vaihe 1: Lähetetään vain metadata (nimet, tyypit, esikatselut)
+        const knowledgeSourceMetadata = knowledgeBase.map((kb, index) => ({
+            id: index.toString(),
+            name: kb.name,
+            type: kb.type,
+            preview: kb.content.substring(0, 300) // Ensimmäiset 300 merkkiä
+        }));
+        
+        const selectionPrompt = `Käyttäjä kysyy: "${userQuestion}"
+
+Seuraavat knowledge source -tiedostot ovat saatavilla:
+${knowledgeSourceMetadata.map(kb => 
+  `[${kb.id}] ${kb.name} (${kb.type})\nEsikatselu: ${kb.preview}...`
+).join('\n\n')}
+
+Valitse 3-5 tiedostoa, jotka ovat todennäköisimmin relevantteja vastataksesi kysymykseen.
+Palauta vastaus JSON-muodossa listana ID-numeroita, esim: ["0", "2", "5"]`;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: selectionPrompt,
+            config: {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: Type.OBJECT,
+                    properties: {
+                        selectedIds: {
+                            type: Type.ARRAY,
+                            items: { type: Type.STRING },
+                            description: "Lista valittujen tiedostojen ID-numeroista (3-5 kpl)"
+                        }
+                    },
+                    required: ['selectedIds']
+                }
+            }
+        });
+        
+        const result = JSON.parse(response.text);
+        const selectedIds = result.selectedIds || [];
+        
+        // Varmistetaan että valitut ID:t ovat validit
+        const validIds = selectedIds.filter((id: string) => {
+            const idx = parseInt(id);
+            return !isNaN(idx) && idx >= 0 && idx < knowledgeBase.length;
+        });
+        
+        // Jos validit ID:t puuttuvat, käytetään ensimmäisiä 3-5 tiedostoa
+        const finalIds = validIds.length > 0 ? validIds : knowledgeBase.slice(0, 5).map((_, idx) => idx.toString());
+        
+        console.log(`[RAG] Selected ${finalIds.length} relevant knowledge sources: ${finalIds.join(', ')}`);
+        return finalIds;
+    } catch (error) {
+        console.error("Error selecting relevant knowledge sources:", error);
+        // Fallback: käytetään ensimmäisiä 3-5 tiedostoa
+        const fallbackIds = knowledgeBase.slice(0, 5).map((_, idx) => idx.toString());
+        console.log(`[RAG] Fallback: using first ${fallbackIds.length} knowledge sources`);
+        return fallbackIds;
+    }
+}
+
+
+// Dynaaminen RAG: Rakentaa keskustelun sisällön käyttäen knowledge base -tietoja vain kun ne ovat tarpeen
+const buildChatContents = async (conversation: Conversation, settings: AppSettings) => {
     const contents: { role: 'user' | 'model', parts: ({ text: string } | { functionCall: any } | { functionResponse: any })[] }[] = [];
 
+    // Lisätään skenaariot
     settings.personality.scenarios.forEach(scenario => {
         contents.push({ role: 'user', parts: [{ text: scenario.userMessage }] });
         contents.push({ role: 'model', parts: [{ text: scenario.botResponse }] });
     });
     
     const messages = conversation.messages;
-    const firstUserMessageIndex = messages.findIndex(m => m.sender === 'user');
-
-    messages.forEach((message, index) => {
+    
+    // Etsitään viimeisin käyttäjän viesti (joka tarvitsee analyysin)
+    // Käytetään reverse() ja findIndex() löytääksemme viimeisimmän käyttäjän viestin
+    let lastUserMessageIndex = -1;
+    for (let i = messages.length - 1; i >= 0; i--) {
+        if (messages[i].sender === 'user') {
+            lastUserMessageIndex = i;
+            break;
+        }
+    }
+    
+    // Käsitellään jokainen viesti
+    for (let i = 0; i < messages.length; i++) {
+        const message = messages[i];
+        
         if (message.sender === 'user') {
             let userText = message.text;
-            // Prepend the general knowledge base only to the FIRST user message of the conversation for efficiency.
-            if (index === firstUserMessageIndex) { 
-                const knowledgeBaseContent = settings.knowledgeBase
-                    ?.map(d => `--- TIETOPANKKI: ${d.name} ---\n${d.content}`)
+            
+            // Dynaaminen päätös: tarvitaanko knowledge base -tietoja?
+            // Analysoidaan VAIN viimeisin käyttäjän viesti, ei kaikkia!
+            // Tämä vähentää Gemini-pyyntöjä merkittävästi
+            if (settings.knowledgeBase && settings.knowledgeBase.length > 0 && i === lastUserMessageIndex) {
+                const conversationHistory = messages.slice(0, i);
+                const needsKB = await needsKnowledgeBase(message.text, conversationHistory);
+                
+                if (needsKB) {
+                    console.log(`[RAG] Knowledge base needed for message: "${message.text.substring(0, 50)}..."`);
+                    
+                    // Vaihe 1: Valitaan relevantit knowledge source -tiedostot
+                    const selectedIds = await selectRelevantKnowledgeSources(
+                        message.text,
+                        settings.knowledgeBase
+                    );
+                    
+                    // Vaihe 2: Muodostetaan sisältö vain valituista knowledge source -tiedostoista
+                    const relevantContent = settings.knowledgeBase
+                        .filter((kb, idx) => selectedIds.includes(idx.toString()))
+                        .map(kb => {
+                            // Rajoitetaan yksittäisen dokumentin pituus (max 5000 merkkiä)
+                            const fullContent = kb.content;
+                            const truncatedContent = fullContent.length > 5000 
+                                ? fullContent.substring(0, 5000) + '...'
+                                : fullContent;
+                            
+                            let formattedContent = `--- KNOWLEDGE_SOURCE: ${kb.name} ---\n\n`;
+                            
+                            // Text content tekstinä (AI voi lukea sen suoraan)
+                            formattedContent += `--- TEXT_CONTENT ---\n${truncatedContent}\n`;
+                            
+                            // AdditionalData JSON-muodossa (strukturoitua dataa: services, products, jne.)
+                            if (kb.additionalData && Object.keys(kb.additionalData).length > 0) {
+                                formattedContent += `\n--- ADDITIONAL_DATA (JSON) ---\n`;
+                                Object.entries(kb.additionalData).forEach(([key, value]) => {
+                                    if (Array.isArray(value) && value.length > 0) {
+                                        formattedContent += `${key.toUpperCase()}:\n${JSON.stringify(value, null, 2)}\n\n`;
+                                    } else if (typeof value === 'object' && value !== null) {
+                                        formattedContent += `${key.toUpperCase()}:\n${JSON.stringify(value, null, 2)}\n\n`;
+                                    }
+                                });
+                            }
+                            
+                            return formattedContent;
+                        })
                     .join('\n\n');
                 
-                if (knowledgeBaseContent) {
-                    userText = `Käytä seuraavaa tietopankkia vastataksesi kysymykseeni:\n\n${knowledgeBaseContent}\n\n--- KYSYMYKSENI ---\n${message.text}`;
+                    if (relevantContent) {
+                        const hasQnAData = settings.qnaData && settings.qnaData.length > 0;
+                        const instructionPrefix = hasQnAData 
+                            ? `TÄRKEÄÄ: Käytä seuraavaa tietopankkia VAIN jos system instructionissa olevat Q&A-vastaukset eivät vastaa kysymykseeni. Jos Q&A-vastaukset sisältävät vastauksen, käytä niitä eikä tietopankkia.\n\n`
+                            : `Käytä seuraavaa tietopankkia vastataksesi kysymykseeni:\n\n`;
+                        
+                        userText = `${instructionPrefix}${relevantContent}\n\n--- USER_QUESTION ---\n${message.text}`;
+                }
+                } else {
+                    console.log(`[RAG] Knowledge base NOT needed for message: "${message.text.substring(0, 50)}..."`);
                 }
             }
+            // Aiemmille käyttäjän viesteille käytetään alkuperäistä tekstiä (ei analyysiä)
+            
             contents.push({ role: 'user', parts: [{ text: userText }] });
 
         } else if (message.sender === 'bot' || message.sender === 'agent') {
@@ -99,7 +306,7 @@ const buildChatContents = (conversation: Conversation, settings: AppSettings) =>
                 contents.push({ role: 'model', parts: [{ text: message.text }] });
             }
         }
-    });
+    }
     
     return contents;
 };
@@ -143,7 +350,7 @@ export async function* getChatResponseStream(
 ): AsyncGenerator<string> {
     try {
         const ai = getAiClient();
-        const contents = buildChatContents(conversation, settings);
+        const contents = await buildChatContents(conversation, settings);
         const systemInstruction = buildSystemInstructionForChat(settings);
 
         // Vaihe A: Ensimmäinen, ei-striimaava kutsu Geminille työkalujen kanssa
@@ -209,8 +416,6 @@ export async function* getChatResponseStream(
     }
 }
 
-
-// FIX: Added the missing getConversationSummary function.
 export const getConversationSummary = async (conversation: Conversation): Promise<string> => {
     try {
         const ai = getAiClient();

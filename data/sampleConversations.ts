@@ -1,4 +1,3 @@
-// FIX: This file was created to hold sample conversation data. The function was moved from useConversations.ts to fix a syntax error in the original file content.
 import { Conversation } from '../types.ts';
 import { generateId } from '../utils/id.ts';
 

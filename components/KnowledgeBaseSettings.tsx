@@ -2,7 +2,7 @@
 import React, { useRef, useState } from 'react';
 import { useKnowledgeBase } from '../hooks/useKnowledgeBase.ts';
 import { parseFile } from '../services/fileParserService.ts';
-import { scrapeTextFromUrl } from '../services/siteScraperService.ts';
+import { scrapeWebsite, ScrapeMode } from '../services/scraperService.ts';
 import { useNotification } from '../context/NotificationContext.tsx';
 import { Book, UploadCloud, Trash2, FileText, Loader, X, ExternalLink } from './Icons.tsx';
 import { KnowledgeSource } from '../types.ts';
@@ -18,6 +18,7 @@ const KnowledgeBaseSettings: React.FC = () => {
     const { addNotification } = useNotification();
     const [isLoading, setIsLoading] = useState<Record<string, boolean>>({});
     const [previewItem, setPreviewItem] = useState<KnowledgeSource | null>(null);
+    const [scrapeMode, setScrapeMode] = useState<ScrapeMode>('default');
     const fileInputRef = useRef<HTMLInputElement>(null);
     const { activeBot } = useBotContext();
     const { user } = useUserContext();
@@ -108,13 +109,14 @@ const KnowledgeBaseSettings: React.FC = () => {
 
         setIsLoading(prev => ({ ...prev, url: true }));
         try {
-            const content = await scrapeTextFromUrl(url);
+            const content = await scrapeWebsite(url, scrapeMode, false);
             const urlObject = new URL(url);
             // Store original URL in content prefix for preview
             addKnowledgeItem({
                 type: 'url',
                 name: urlObject.hostname,
-                content: `URL: ${url}\n\n${content.substring(0, 20000)}`,
+                content: `URL: ${url}\n\n${content.text.substring(0, 20000)}`,
+                additionalData: content.additionalData,
             });
             addNotification({ message: `Sivuston ${urlObject.hostname} sisältö lisätty.`, type: 'success' });
         } catch (error: any) {
@@ -181,28 +183,45 @@ const KnowledgeBaseSettings: React.FC = () => {
                         {isLoading.file ? <Loader className="w-5 h-5 animate-spin"/> : <UploadCloud className="w-5 h-5" />}
                         {isLoading.file ? 'Ladataan...' : t('know.upload_file')}
                     </button>
-                    <button 
-                        onClick={handleUrlScrape} 
-                        disabled={isLoading.url} 
-                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-md disabled:opacity-50 transition-colors"
-                        style={{
-                            backgroundColor: 'var(--admin-sidebar-bg, #374151)',
-                            color: 'var(--admin-text-primary, #f3f4f6)'
-                        }}
-                        onMouseEnter={(e) => {
-                            if (!isLoading.url) {
-                                e.currentTarget.style.backgroundColor = 'var(--admin-card-bg, #4b5563)';
-                            }
-                        }}
-                        onMouseLeave={(e) => {
-                            if (!isLoading.url) {
-                                e.currentTarget.style.backgroundColor = 'var(--admin-sidebar-bg, #374151)';
-                            }
-                        }}
-                    >
-                       {isLoading.url ? <Loader className="w-5 h-5 animate-spin"/> : <FileText className="w-5 h-5" />}
-                       {isLoading.url ? 'Luetaan...' : t('know.add_web')}
-                    </button>
+                    <div className="flex-1 flex flex-col gap-2">
+                        <select
+                            value={scrapeMode}
+                            onChange={(e) => setScrapeMode(e.target.value as ScrapeMode)}
+                            className="px-3 py-2 rounded-md text-sm"
+                            style={{
+                                backgroundColor: 'var(--admin-sidebar-bg, #374151)',
+                                color: 'var(--admin-text-primary, #f3f4f6)',
+                                border: '1px solid var(--admin-border, #4b5563)'
+                            }}
+                        >
+                            <option value="default">Default</option>
+                            <option value="dataflow-vk">Dataflow VK</option>
+                            <option value="dataflow-sites">Dataflow Sites</option>
+                            <option value="dataflow-travel">Dataflow Travel</option>
+                        </select>
+                        <button 
+                            onClick={handleUrlScrape} 
+                            disabled={isLoading.url} 
+                            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-md disabled:opacity-50 transition-colors"
+                            style={{
+                                backgroundColor: 'var(--admin-sidebar-bg, #374151)',
+                                color: 'var(--admin-text-primary, #f3f4f6)'
+                            }}
+                            onMouseEnter={(e) => {
+                                if (!isLoading.url) {
+                                    e.currentTarget.style.backgroundColor = 'var(--admin-card-bg, #4b5563)';
+                                }
+                            }}
+                            onMouseLeave={(e) => {
+                                if (!isLoading.url) {
+                                    e.currentTarget.style.backgroundColor = 'var(--admin-sidebar-bg, #374151)';
+                                }
+                            }}
+                        >
+                           {isLoading.url ? <Loader className="w-5 h-5 animate-spin"/> : <FileText className="w-5 h-5" />}
+                           {isLoading.url ? 'Luetaan...' : t('know.add_web')}
+                        </button>
+                    </div>
                 </div>
 
                 <div className="mt-5 space-y-2">

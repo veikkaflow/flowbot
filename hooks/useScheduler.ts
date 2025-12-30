@@ -1,4 +1,3 @@
-// FIX: This file was created to resolve "Cannot find name" and module resolution errors.
 import { useState, useEffect } from 'react';
 import { useBotContext } from '../context/BotContext.tsx';
 

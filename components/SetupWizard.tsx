@@ -4,6 +4,7 @@ import { useAppSetup } from '../hooks/useAppSetup.ts';
 import { Bot as BotIcon, Loader, RefreshCcw, ArrowLeft, Check, X, LogOut } from './Icons.tsx';
 import { Bot } from '../types.ts';
 import { botTemplates } from '../data/defaultBots.ts';
+import { ScrapeMode } from '../services/scraperService.ts';
 
 interface SetupWizardProps {
     onSetupComplete: (bot: Omit<Bot, 'id'>) => void;
@@ -76,6 +77,8 @@ const TemplateSelector: React.FC<{ selected: string, onSelect: (id: string) => v
 
 
 const SetupWizard: React.FC<SetupWizardProps> = ({ onSetupComplete, onCancel, onLogout }) => {
+    const [scrapeMode, setScrapeMode] = React.useState<ScrapeMode>('default');
+    
     const {
         step,
         setStep,
@@ -101,7 +104,7 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onSetupComplete, onCancel, on
     const handleUrlSubmit = (e: React.FormEvent) => {
         e.preventDefault();
         if (websiteUrl) {
-            startScraping(websiteUrl);
+            startScraping(websiteUrl, scrapeMode);
         }
     };
     
@@ -125,6 +128,21 @@ const SetupWizard: React.FC<SetupWizardProps> = ({ onSetupComplete, onCancel, on
                             <BotIcon className="w-16 h-16 mx-auto text-blue-500 mb-4 animate-float" />
                             <h1 className="text-3xl font-bold text-white">Luodaan uusi botti</h1>
                             <p className="text-gray-400 mt-2">Anna yrityksesi verkkosivun osoite. Analysoimme sivun ja luomme automaattisesti botin brändisi mukaan.</p>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-2">Scraper Mode</label>
+                            <select
+                                value={scrapeMode}
+                                onChange={(e) => setScrapeMode(e.target.value as ScrapeMode)}
+                                className="w-full px-3 py-2 rounded-md bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                disabled={isLoading}
+                            >
+                                <option value="default">Default</option>
+                                <option value="dataflow-vk">Dataflow VK</option>
+                                <option value="dataflow-sites">Dataflow Sites</option>
+                                <option value="dataflow-travel">Dataflow Travel</option>
+                            </select>
                         </div>
 
                         <div>

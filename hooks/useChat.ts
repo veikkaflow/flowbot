@@ -73,7 +73,7 @@ export const useChat = (visitorId: string, conversation: Conversation | null) =>
 
         setMessages(prevMessages => [...prevMessages, userMessage, botPlaceholder]);
 
-        // CRITICAL FIX: Await the creation/addition of the user message FIRST.
+        // Await the creation/addition of the user message FIRST.
         // This ensures the conversation document exists before we try to add the bot placeholder.
         // addMessage now returns the conversation ID, which we capture.
         const conversationId = await addMessage(visitorId, userMessage);

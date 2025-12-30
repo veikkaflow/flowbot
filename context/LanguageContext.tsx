@@ -44,8 +44,8 @@ export const LanguageProvider: React.FC<{ children: ReactNode }> = ({ children }
                             localStorage.setItem(STORAGE_KEY, data.language);
                         }
                     } else {
-                        // FIX: Create the user document if it doesn't exist. 
-                        // This ensures the 'users' collection is created in Firestore immediately on login.
+                        // Create the user document if it doesn't exist
+                        // This ensures the 'users' collection is created in Firestore immediately on login
                         const currentLocal = localStorage.getItem(STORAGE_KEY) as Language || 'fi';
                         await setDoc(userRef, { language: currentLocal }, { merge: true });
                     }

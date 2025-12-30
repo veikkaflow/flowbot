@@ -1,6 +1,5 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-// FIX: Replaced non-existent Avatars type with AvatarSettings.
 import { Conversation, AvatarSettings, Agent } from '../types.ts';
 import { MessageBubble } from './MessageBubble.tsx';
 import { Send, UserCheck, UserX, Archive, FileText, Loader, ArrowDown } from './Icons.tsx';

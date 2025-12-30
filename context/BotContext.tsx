@@ -1,4 +1,3 @@
-// FIX: This file was created to resolve "Cannot find name" and module resolution errors.
 import React, { createContext, useContext, ReactNode } from 'react';
 import { useBotManager } from '../hooks/useBotManager.ts';
 import { Bot } from '../types.ts';
