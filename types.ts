@@ -50,6 +50,7 @@ export interface Conversation {
     isEnded: boolean;
     agentId: string | null;
     submissions?: Submission[];
+    summary?: string;
     status?: 'pending' | 'handled';
 }
 
@@ -171,7 +172,7 @@ export interface UserManagementSettings {
 }
 
 // UI State
-export type AdminView = 'dashboard' | 'inbox' | 'leads' | 'settings' | 'analysis'; // Added 'leads'
+export type AdminView = 'dashboard' | 'inbox' | 'leads' | 'settings' | 'analysis' | 'summaries'; // Added 'leads and summaries'
 export type SettingsView = 'appearance' | 'personality' | 'behavior' | 'schedule' | 'avatars' | 'knowledge' | 'agents' | 'users' | 'installation';
 export type LayoutView = 'split' | 'customer' | 'admin';
 

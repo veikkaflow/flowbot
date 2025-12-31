@@ -42,14 +42,14 @@ const QuoteForm: React.FC<QuoteFormProps> = ({ onBack, onSubmit, initialName, la
     }
     
     return (
-        <div className="p-4 h-full flex flex-col">
-            <div className="flex items-center gap-2 mb-4">
+        <div className="p-4 h-full flex flex-col min-h-0">
+            <div className="flex items-center gap-2 mb-4 flex-shrink-0">
                  <button onClick={onBack} className="text-[var(--chat-text-secondary)] hover:text-[var(--chat-text-primary)] p-1 rounded-full">
                     <ArrowLeft className="w-5 h-5" />
                 </button>
                 <h3 className="text-lg font-semibold text-[var(--chat-text-primary)]">{t('chat.quote')}</h3>
             </div>
-            <form onSubmit={handleSubmit} className="space-y-4 flex-grow flex flex-col">
+            <form onSubmit={handleSubmit} className="space-y-4 flex-grow flex flex-col min-h-0 overflow-y-auto">
                 <div>
                     <label htmlFor="name" className="block text-sm font-medium text-[var(--chat-text-secondary)]">{t('form.name')}</label>
                     <input type="text" name="name" id="name" required value={formData.name} onChange={handleChange} className="mt-1 w-full text-sm px-4 py-2 bg-[var(--chat-input-bg)] text-[var(--chat-text-primary)] border border-[var(--chat-border-color)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] placeholder-[var(--chat-text-muted)]" />
@@ -67,7 +67,7 @@ const QuoteForm: React.FC<QuoteFormProps> = ({ onBack, onSubmit, initialName, la
                     <textarea name="details" id="details" required rows={5} value={formData.details} onChange={handleChange} className="mt-1 w-full text-sm px-4 py-2 bg-[var(--chat-input-bg)] text-[var(--chat-text-primary)] border border-[var(--chat-border-color)] rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] placeholder-[var(--chat-text-muted)]"></textarea>
                 </div>
                 <div className="flex-grow"></div>
-                <button type="submit" className="w-full flex items-center justify-center gap-2 p-3 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110 transition-all font-semibold" style={{ backgroundImage: `linear-gradient(to right, var(--color-primary), var(--color-primary-light))` }}>
+                <button type="submit" className="w-full flex items-center justify-center gap-2 p-3 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110 transition-all font-semibold flex-shrink-0" style={{ backgroundImage: `linear-gradient(to right, var(--color-primary), var(--color-primary-light))` }}>
                     <Send className="w-5 h-5" />
                     {t('form.submit_quote')}
                 </button>

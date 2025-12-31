@@ -77,7 +77,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, avatars, 
     return (
         <div className={`flex items-end gap-3 ${alignment}`}>
             {showAvatar && (
-                 <img src={avatarSrc} alt="avatar" className="w-8 h-8 rounded-full flex-shrink-0" />
+                 <img 
+                     src={avatarSrc} 
+                     alt="avatar" 
+                     className="w-8 h-8 rounded-full flex-shrink-0" 
+                     style={{ width: '32px', height: '32px', objectFit: 'cover', flexShrink: 0 }}
+                 />
             )}
             
             {/* Spacer to align bubbles correctly when avatar is not shown */}

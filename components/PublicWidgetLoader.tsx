@@ -103,18 +103,39 @@ const PublicWidgetLoader: React.FC<PublicWidgetLoaderProps> = ({ botId }) => {
     } as React.CSSProperties;
 
     return (
-        <div style={style}>
-            <LanguageProvider>
-                <PublicBotProvider bot={bot}>
-                    <ConversationProvider>
-                        <NotificationProvider>
-                            {/* Render ChatWidget directly. It handles its own layout (bubble vs open) */}
-                            <ChatWidget visitorId={visitorId} />
-                            <NotificationHost />
-                        </NotificationProvider>
-                    </ConversationProvider>
-                </PublicBotProvider>
-            </LanguageProvider>
+        <div 
+            style={{
+                ...style,
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                width: 0,
+                height: 0,
+                overflow: 'visible',
+                pointerEvents: 'none',
+                zIndex: 9999,
+            }} 
+            className="flowbot-widget-container"
+        >
+            <div style={{ 
+                pointerEvents: 'auto',
+                width: 'auto',
+                height: 'auto',
+                maxWidth: 'none',
+                maxHeight: 'none',
+            }}>
+                <LanguageProvider>
+                    <PublicBotProvider bot={bot}>
+                        <ConversationProvider>
+                            <NotificationProvider>
+                                {/* Render ChatWidget directly. It handles its own layout (bubble vs open) */}
+                                <ChatWidget visitorId={visitorId} />
+                                <NotificationHost />
+                            </NotificationProvider>
+                        </ConversationProvider>
+                    </PublicBotProvider>
+                </LanguageProvider>
+            </div>
         </div>
     );
 };

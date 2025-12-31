@@ -56,7 +56,14 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ visitorId }) => {
     const { messages, isLoading, handleSendMessage, handleStartNewConversation } = useChat(visitorId, conversationFromContext);
     const { isOnline } = useScheduler();
 
-    const [isOpen, setIsOpen] = useState(true);
+    // Check if we're embedded (widget mode) vs admin view
+    // In embedded mode, start closed (small icon). In admin view, start open.
+    const isEmbeddedCheck = typeof window !== 'undefined' && 
+                           (window.location.search.includes('mode=widget') || 
+                            document.querySelector('.flowbot-widget-container') !== null);
+    
+    // Start closed when embedded (showing small icon), open in admin view
+    const [isOpen, setIsOpen] = useState(!isEmbeddedCheck);
     const [input, setInput] = useState('');
     const [chatSize, setChatSize] = useState<'medium' | 'large' | 'small'>('medium');
     const [activeView, setActiveView] = useState<ActiveView>('chat');
@@ -127,7 +134,19 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ visitorId }) => {
     const { appearance, personality, behavior } = activeBot.settings;
     const isAgentsOnlyOffline = behavior.operatingMode === 'agents_only' && !isOnline;
     
-    const sizeClasses = {
+    // Check if we're embedded (widget mode) vs admin view
+    // In embedded mode, use fixed positioning. In admin view, use absolute.
+    // Check if parent has flowbot-widget-container class (set by embed.tsx)
+    const isEmbedded = typeof window !== 'undefined' && 
+                       (window.location.search.includes('mode=widget') || 
+                        document.querySelector('.flowbot-widget-container') !== null);
+    
+    // Use fixed heights for embedded widgets, percentage for admin view
+    const sizeClasses = isEmbedded ? {
+        small: 'w-80 h-[400px]',
+        medium: 'w-96 h-[600px] max-h-[720px]',
+        large: 'w-[480px] h-[700px] max-h-[720px]',
+    } : {
         small: 'w-80 h-[50%]',
         medium: 'w-96 h-[80%] max-h-[720px]',
         large: 'w-[480px] h-[90%]',
@@ -241,17 +260,71 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ visitorId }) => {
     // Determine the theme class based on settings (defaulting to light if undefined)
     const themeClass = appearance.themeMode === 'dark' ? 'theme-dark' : 'theme-light';
 
+    // Always use fixed positioning when embedded, absolute for admin view
+    // For embedded widgets, use inline styles to ensure proper positioning regardless of page CSS
+    // For embedded widgets, ensure fixed positioning and proper sizing
+    const positioningStyles = isEmbedded ? {
+        position: 'fixed' as const,
+        bottom: '20px',
+        right: '20px',
+        zIndex: 9999,
+        left: 'auto',
+        top: 'auto',
+        margin: 0,
+        // When closed: fixed small icon size
+        // When open: use fixed sizes based on chatSize
+        ...(isOpen ? {
+            width: chatSize === 'small' ? '320px' : chatSize === 'medium' ? '384px' : '480px',
+            height: chatSize === 'small' ? '400px' : chatSize === 'medium' ? '600px' : '700px',
+            maxWidth: chatSize === 'small' ? '320px' : chatSize === 'medium' ? '384px' : '480px',
+            maxHeight: chatSize === 'small' ? '400px' : chatSize === 'medium' ? '600px' : '700px',
+            minWidth: chatSize === 'small' ? '320px' : chatSize === 'medium' ? '384px' : '480px',
+            minHeight: chatSize === 'small' ? '400px' : chatSize === 'medium' ? '600px' : '700px',
+        } : {
+            width: '64px',
+            height: '64px',
+            maxWidth: '64px',
+            maxHeight: '64px',
+            minWidth: '64px',
+            minHeight: '64px',
+        }),
+    } : {};
+
     return (
         <div style={colorVars} className={themeClass}>
-            <div className={`absolute bottom-5 right-5 z-50 transition-all duration-300 ${isOpen ? `${sizeClasses[chatSize]} shadow-2xl rounded-2xl` : 'w-16 h-16'}`}>
+            <div 
+                className={`${isEmbedded ? '' : 'absolute'} bottom-5 right-5 z-50 transition-all duration-300 ${isOpen ? `${sizeClasses[chatSize]} shadow-2xl rounded-2xl` : 'w-16 h-16'}`}
+                style={positioningStyles}
+            >
                 {isOpen ? (
-                    <div className="w-full h-full bg-[var(--chat-bg)] rounded-2xl flex flex-col overflow-hidden border border-[var(--chat-border-color)] relative">
+                    <div 
+                        className="w-full h-full bg-[var(--chat-bg)] rounded-2xl flex flex-col overflow-hidden border border-[var(--chat-border-color)] relative"
+                        style={{
+                            opacity: 1,
+                            backgroundColor: isEmbedded 
+                                ? (appearance.themeMode === 'dark' ? 'rgba(23, 23, 33, 1)' : '#ffffff')
+                                : 'var(--chat-bg)',
+                            width: '100%',
+                            height: '100%',
+                            maxWidth: '100%',
+                            maxHeight: '100%',
+                            boxSizing: 'border-box',
+                            overflow: 'hidden',
+                            display: 'flex',
+                            flexDirection: 'column',
+                        }}
+                    >
                         <BackgroundAnimation animation={appearance.backgroundAnimation} />
                         
                         <div className="relative z-10 flex flex-col flex-1 h-full">
                             <header className="flex-shrink-0 p-4 flex items-center justify-between text-[var(--chat-header-text)]" style={{ backgroundColor: 'var(--header-bg)' }}>
                                 <div className="flex items-center gap-3">
-                                    <img src={activeBot.settings.avatarSettings.selectedBotAvatar} alt="bot" className="w-10 h-10 rounded-full" />
+                                    <img 
+                                        src={activeBot.settings.avatarSettings.selectedBotAvatar} 
+                                        alt="bot" 
+                                        className="w-10 h-10 rounded-full flex-shrink-0" 
+                                        style={{ width: '40px', height: '40px', objectFit: 'cover' }}
+                                    />
                                     <div>
                                         <h3 className="font-bold">{appearance.brandName}</h3>
                                         <p className="text-xs opacity-80">{isOnline ? tBot('chat.online') : tBot('chat.offline')}</p>
@@ -302,33 +375,44 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ visitorId }) => {
                                             </div>
                                         )}
                                     </div>
-                                    <button onClick={() => setIsOpen(false)} title="Pienennä" className="p-1.5 text-current/80 hover:text-current"><ArrowDown className="w-5 h-5"/></button>
+                                    <button 
+                                        onClick={() => setIsOpen(false)} 
+                                        title="Pienennä" 
+                                        className="p-1.5 text-[var(--chat-header-text)]/80 hover:text-[var(--chat-header-text)] transition-colors"
+                                        style={{ color: 'inherit', zIndex: 10 }}
+                                    >
+                                        <ArrowDown className="w-5 h-5"/>
+                                    </button>
                                 </div>
                             </header>
 
-                            <div className="flex-1 flex flex-col min-h-0">
+                            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
                                 {isAgentsOnlyOffline ? (
-                                    <div className="p-4 text-center h-full flex flex-col justify-center items-center">
+                                    <div className="p-4 text-center h-full flex flex-col justify-center items-center overflow-y-auto">
                                         <h3 className="text-lg font-semibold text-[var(--chat-text-primary)]">{tBot('chat.away')}</h3>
                                         <p className="text-sm text-[var(--chat-text-secondary)] mt-2">{activeBot.settings.schedule.offlineMessage}</p>
                                     </div>
                                 ) : activeView === 'contact' ? (
-                                    <ContactForm
-                                        onBack={() => setActiveView('chat')}
-                                        onSubmit={handleContactSubmit}
-                                        initialName={conversationFromContext?.visitorName.startsWith('Vierailija') || conversationFromContext?.visitorName.startsWith('Visitor') ? '' : conversationFromContext?.visitorName}
-                                        language={botLanguage}
-                                    />
+                                    <div className="flex-1 overflow-y-auto min-h-0">
+                                        <ContactForm
+                                            onBack={() => setActiveView('chat')}
+                                            onSubmit={handleContactSubmit}
+                                            initialName={conversationFromContext?.visitorName.startsWith('Vierailija') || conversationFromContext?.visitorName.startsWith('Visitor') ? '' : conversationFromContext?.visitorName}
+                                            language={botLanguage}
+                                        />
+                                    </div>
                                 ) : activeView === 'quote' ? (
-                                     <QuoteForm
-                                        onBack={() => setActiveView('chat')}
-                                        onSubmit={handleQuoteSubmit}
-                                        initialName={conversationFromContext?.visitorName.startsWith('Vierailija') || conversationFromContext?.visitorName.startsWith('Visitor') ? '' : conversationFromContext?.visitorName}
-                                        language={botLanguage}
-                                    />
+                                    <div className="flex-1 overflow-y-auto min-h-0">
+                                        <QuoteForm
+                                            onBack={() => setActiveView('chat')}
+                                            onSubmit={handleQuoteSubmit}
+                                            initialName={conversationFromContext?.visitorName.startsWith('Vierailija') || conversationFromContext?.visitorName.startsWith('Visitor') ? '' : conversationFromContext?.visitorName}
+                                            language={botLanguage}
+                                        />
+                                    </div>
                                 ) : activeView === 'editName' ? (
-                                    <div className="p-4 h-full flex flex-col">
-                                        <div className="flex items-center gap-2 mb-4">
+                                    <div className="flex-1 overflow-y-auto min-h-0 p-4 flex flex-col">
+                                        <div className="flex items-center gap-2 mb-4 flex-shrink-0">
                                             <button onClick={() => setActiveView('chat')} className="text-[var(--chat-text-secondary)] hover:text-[var(--chat-text-primary)] p-1 rounded-full">
                                                 <ArrowLeft className="w-5 h-5" />
                                             </button>
@@ -348,14 +432,14 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ visitorId }) => {
                                                 />
                                             </div>
                                             <div className="flex-grow"></div>
-                                            <button type="submit" className="w-full flex items-center justify-center gap-2 p-3 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110 transition-all font-semibold" style={{ backgroundImage: `linear-gradient(to right, var(--color-primary), var(--color-primary-light))` }}>
+                                            <button type="submit" className="w-full flex items-center justify-center gap-2 p-3 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:brightness-110 transition-all font-semibold flex-shrink-0" style={{ backgroundImage: `linear-gradient(to right, var(--color-primary), var(--color-primary-light))` }}>
                                                 {tBot('chat.save')}
                                             </button>
                                         </form>
                                     </div>
                                 ) : activeView === 'help' ? (
-                                    <div className="p-4 h-full flex flex-col overflow-y-auto">
-                                        <div className="flex items-center gap-2 mb-4">
+                                    <div className="flex-1 overflow-y-auto min-h-0 p-4 flex flex-col">
+                                        <div className="flex items-center gap-2 mb-4 flex-shrink-0">
                                             <button onClick={() => setActiveView('chat')} className="text-[var(--chat-text-secondary)] hover:text-[var(--chat-text-primary)] p-1 rounded-full">
                                                 <ArrowLeft className="w-5 h-5" />
                                             </button>
@@ -400,7 +484,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ visitorId }) => {
                                     </div>
                                 ) : (
                                     <>
-                                        <div className="flex-1 overflow-y-auto p-4 space-y-2">
+                                        <div className="flex-1 overflow-y-auto p-4 space-y-2 min-h-0">
                                             {messages.map((msg, index) => {
                                                 const prevMsg = messages[index - 1];
                                                 const showDateSeparator = !prevMsg || !isSameDay(new Date(msg.timestamp), new Date(prevMsg.timestamp));
@@ -444,13 +528,19 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ visitorId }) => {
                                             {(behavior.showContactButton || behavior.showQuoteButton) && (
                                                  <div className="flex flex-wrap gap-2 mb-2">
                                                     {behavior.showContactButton && (
-                                                         <button onClick={() => setActiveView('contact')} className="flex items-center gap-2 px-3 py-1.5 bg-[var(--chat-input-bg)] text-sm text-[var(--chat-text-secondary)] rounded-full hover:bg-gray-200">
+                                                         <button 
+                                                            onClick={() => setActiveView('contact')} 
+                                                            className="flex items-center gap-2 px-3 py-1.5 bg-[var(--chat-input-bg)] text-sm text-[var(--chat-text-primary)] rounded-full hover:bg-[var(--chat-button-bg)] transition-colors border border-[var(--chat-border-color)]"
+                                                        >
                                                             <Mail className="w-4 h-4 text-[var(--color-primary)]" />
                                                             {tBot('chat.contact')}
                                                         </button>
                                                     )}
                                                      {behavior.showQuoteButton && (
-                                                         <button onClick={() => setActiveView('quote')} className="flex items-center gap-2 px-3 py-1.5 bg-[var(--chat-input-bg)] text-sm text-[var(--chat-text-secondary)] rounded-full hover:bg-gray-200">
+                                                         <button 
+                                                            onClick={() => setActiveView('quote')} 
+                                                            className="flex items-center gap-2 px-3 py-1.5 bg-[var(--chat-input-bg)] text-sm text-[var(--chat-text-primary)] rounded-full hover:bg-[var(--chat-button-bg)] transition-colors border border-[var(--chat-border-color)]"
+                                                        >
                                                             <Briefcase className="w-4 h-4 text-[var(--color-primary)]" />
                                                             {tBot('chat.quote')}
                                                         </button>
@@ -477,7 +567,16 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ visitorId }) => {
                         </div>
                     </div>
                 ) : (
-                    <button onClick={() => setIsOpen(true)} className="w-16 h-16 rounded-full flex items-center justify-center shadow-xl transition-transform hover:scale-110" style={{ backgroundColor: 'var(--color-primary)' }}>
+                    <button 
+                        onClick={() => setIsOpen(true)} 
+                        className="w-16 h-16 rounded-full flex items-center justify-center shadow-xl transition-transform hover:scale-110" 
+                        style={{ 
+                            backgroundColor: 'var(--color-primary)',
+                            opacity: 1,
+                            position: 'relative',
+                            zIndex: 9999,
+                        }}
+                    >
                         <MessageSquare className="w-8 h-8 text-white" />
                     </button>
                 )}

@@ -1,24 +1,63 @@
 {
-  "functions": [
-    {
-      "source": "functions-python-simple",
-      "codebase": "python-scraper-simple",
-      "runtime": "python311"
-    }
-  
-  ],
   "firestore": {
     "rules": "firestore.rules"
   },
   "storage": {
     "rules": "storage.rules"
   },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "runtime": "nodejs20"
+    }
+  ],
   "hosting": {
     "public": "dist",
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
+    ],
+    "headers": [
+      {
+        "source": "/embed.js",
+        "headers": [
+          {
+            "key": "Content-Type",
+            "value": "application/javascript"
+          },
+          {
+            "key": "Access-Control-Allow-Origin",
+            "value": "*"
+          },
+          {
+            "key": "Access-Control-Allow-Methods",
+            "value": "GET"
+          },
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=3600"
+          }
+        ]
+      },
+      {
+        "source": "/assets/**",
+        "headers": [
+          {
+            "key": "Access-Control-Allow-Origin",
+            "value": "*"
+          },
+          {
+            "key": "Access-Control-Allow-Methods",
+            "value": "GET"
+          },
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=31536000, immutable"
+          }
+        ]
+      }
     ],
     "rewrites": [
       {

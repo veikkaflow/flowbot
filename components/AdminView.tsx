@@ -4,11 +4,13 @@ import ViewSwitcher, { SwitcherViewItem } from './ViewSwitcher.tsx';
 import DashboardView from './DashboardView.tsx';
 import InboxDashboard from './InboxDashboard.tsx';
 import LeadsView from './LeadsView.tsx'; // Import LeadsView
+import Summariesview from './Summariesview.tsx';
 import SettingsDashboard from './SettingsDashboard.tsx';
 import AnalysisDashboard from './AnalysisDashboard.tsx';
-import { Home, Mail, Shield, BarChart2, List } from './Icons.tsx'; // Import List icon
+import { Home, Mail, Shield, BarChart2, List, Briefcase } from './Icons.tsx'; // Import List icon
 import { AdminView as AdminViewType, SettingsView } from '../types.ts';
 import { useLanguage } from '../context/LanguageContext.tsx';
+
 
 
 const AdminView: React.FC = () => {
@@ -27,7 +29,8 @@ const AdminView: React.FC = () => {
     const views: SwitcherViewItem[] = [
         { id: 'dashboard', name: t('nav.dashboard'), icon: Home },
         { id: 'inbox', name: t('nav.inbox'), icon: Mail },
-        { id: 'leads', name: t('nav.leads'), icon: List }, // Added Leads view
+        { id: 'leads', name: t('nav.leads'), icon: Briefcase }, // Fixed Leads view icon type
+        { id: 'summaries', name: t('nav.summaries'), icon: List }, // Added Summaries view
         { id: 'settings', name: t('nav.settings'), icon: Shield },
         { id: 'analysis', name: t('nav.reporting'), icon: BarChart2 },
     ];
@@ -40,6 +43,8 @@ const AdminView: React.FC = () => {
                 return <InboxDashboard />;
             case 'leads': // Render LeadsView
                 return <LeadsView />;
+            case 'summaries':
+                return <Summariesview />;
             case 'settings':
                 return <SettingsDashboard initialView={currentSettingsView} />;
             case 'analysis':

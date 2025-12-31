@@ -34,14 +34,9 @@ service cloud.firestore {
     
     // Bots collection rules
     match /bots/{botId} {
-      // Allow read if user is admin or owns the bot
-      // Note: allowedBotIds check is handled in frontend code
-      allow read: if request.auth != null && (
-        isAdmin() ||
-        isBotOwner(botId) ||
-        // Allow read for all authenticated users - frontend will filter by allowedBotIds
-        request.auth != null
-      );
+      // Allow read for everyone (public data for widgets)
+      // Admin/owner checks are still enforced for write operations
+      allow read: if true;
       
       // Allow create if user is authenticated
       allow create: if request.auth != null && 
@@ -88,36 +83,39 @@ service cloud.firestore {
     
     // Conversations collection rules
     match /conversations/{conversationId} {
-      // Allow read if user is admin, or if conversation belongs to user's bot
-      allow read: if request.auth != null && (
-        isAdmin() ||
-        resource.data.botId != null && (
-          exists(/databases/$(database)/documents/bots/$(resource.data.botId)) &&
-          (
-            get(/databases/$(database)/documents/bots/$(resource.data.botId)).data.ownerId == request.auth.uid ||
-            (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-             resource.data.botId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.allowedBotIds)
-          )
-        )
-      );
+      // Allow read for everyone (widgets need to read their own conversations)
+      // Admin checks are still enforced for write operations
+      allow read: if true;
       
-      // Allow create if user is authenticated
-      allow create: if request.auth != null;
+      // Allow create for everyone (widgets need to create conversations)
+      // VisitorId is set by the widget, no authentication required
+      allow create: if true;
       
-      // Allow update if user is admin, owns the bot, or has access via allowedBotIds
-      allow update: if request.auth != null && (
-        isAdmin() ||
-        (resource.data.botId != null &&
+      // Allow update if:
+      // 1. User is admin, OR
+      // 2. User owns the bot, OR
+      // 3. User has access via allowedBotIds, OR
+      // 4. Updating visitor's own conversation (visitorId matches and not changing critical fields)
+      allow update: if (
+        // Admin can update anything
+        (request.auth != null && isAdmin()) ||
+        // Bot owner can update
+        (request.auth != null && resource.data.botId != null &&
          exists(/databases/$(database)/documents/bots/$(resource.data.botId)) &&
-         (
-           get(/databases/$(database)/documents/bots/$(resource.data.botId)).data.ownerId == request.auth.uid ||
-           (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-            resource.data.botId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.allowedBotIds)
-         )
-        )
+         get(/databases/$(database)/documents/bots/$(resource.data.botId)).data.ownerId == request.auth.uid) ||
+        // User with bot access can update
+        (request.auth != null && resource.data.botId != null &&
+         exists(/databases/$(database)/documents/bots/$(resource.data.botId)) &&
+         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         resource.data.botId in get(/databases/$(database)/documents/users/$(request.auth.uid)).data.allowedBotIds) ||
+        // Visitor can update their own conversation (for adding messages)
+        // Ensure visitorId matches and we're only updating messages/visitorName (not botId or other critical fields)
+        (resource.data.visitorId != null && 
+         request.resource.data.visitorId == resource.data.visitorId &&
+         request.resource.data.botId == resource.data.botId)
       );
       
-      // Allow delete if user is admin
+      // Allow delete only for admins
       allow delete: if request.auth != null && isAdmin();
     }
     

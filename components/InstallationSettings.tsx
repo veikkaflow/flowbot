@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useBotContext } from '../context/BotContext.tsx';
 import { Zap, Check } from './Icons.tsx';
 import { useLanguage } from '../context/LanguageContext.tsx';
@@ -10,11 +10,21 @@ const InstallationSettings: React.FC = () => {
 
     if (!activeBot) return null;
 
-    // The script src is now a placeholder. The user must replace this with their actual
-    // bundled script URL after deploying the application.
+    // Get deployment URL - use current origin or allow override via environment variable
+    const deploymentUrl = useMemo(() => {
+        // In production, use current origin (Firebase Hosting URL)
+        // Can be overridden with environment variable if needed
+        const envUrl = import.meta.env.VITE_DEPLOYMENT_URL;
+        if (envUrl) {
+            return envUrl.replace(/\/$/, ''); // Remove trailing slash
+        }
+        // Use current origin (works for Firebase Hosting)
+        return window.location.origin;
+    }, []);
+
     const embedCode = `<!-- FlowBot AI Start -->
 <div data-flowbot-id="${activeBot.id}"></div>
-<script src="https://your-domain.com/embed.js" defer></script>
+<script src="${deploymentUrl}/embed.js" defer></script>
 <!-- FlowBot AI End -->`;
 
     const handleCopy = () => {
@@ -53,6 +63,15 @@ const InstallationSettings: React.FC = () => {
                     <li>{t('inst.step3')}</li>
                     <li>{t('inst.step4')}</li>
                 </ul>
+            </div>
+
+            <div className="p-6 bg-blue-900/20 rounded-lg border border-blue-700/50">
+                <h4 className="font-semibold text-white mb-2">Huomio</h4>
+                <p className="text-sm text-gray-300">
+                    Widgetti lataa automaattisesti tarvittavat tyylitiedostot. Varmista että 
+                    <code className="px-1 py-0.5 bg-gray-800 rounded text-xs">embed.js</code> 
+                    on saatavilla osoitteessa <code className="px-1 py-0.5 bg-gray-800 rounded text-xs">{deploymentUrl}/embed.js</code>
+                </p>
             </div>
         </div>
     );

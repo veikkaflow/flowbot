@@ -117,6 +117,7 @@ export const conversationConverter: FirestoreDataConverter<Conversation> = {
             isEnded: data.isEnded,
             agentId: data.agentId,
             submissions: data.submissions || [],
+            summary: data.summary || undefined,
             status: data.status || 'pending',
         };
     }

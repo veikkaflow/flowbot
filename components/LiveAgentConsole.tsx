@@ -9,7 +9,8 @@ import { useNotification } from '../context/NotificationContext.tsx';
 import { getConversationSummary } from '../services/geminiService.ts';
 import { isSameDay, formatDateSeparator } from '../utils/time.ts';
 import { useLanguage } from '../context/LanguageContext.tsx';
-
+import { db } from '../services/firebase.ts';
+import { updateDoc, doc } from 'firebase/firestore';
 interface LiveAgentConsoleProps {
     conversation: Conversation;
     onSendMessage: (text: string) => void;
@@ -82,13 +83,17 @@ const LiveAgentConsole: React.FC<LiveAgentConsoleProps> = ({ conversation, onSen
         setIsSummarizing(true);
         try {
             const summary = await getConversationSummary(conversation);
-            addNotification({
-                message: `Yhteenveto: ${summary}`,
-                type: 'info',
-                duration: 15000,
-                timestamp: new Date().toISOString()
-            });
+
+            await updateDoc(doc(db, 'conversations', conversation.id), { summary: summary });
+
+                addNotification({
+                    message: `Yhteenveto luotu onnistuneesti.`,
+                    type: 'success',
+                    timestamp: new Date().toISOString()
+                });
+
         } catch (error) {
+            console.error("Error saving summary:", error);
             addNotification({ message: 'Yhteenvedon luonti epäonnistui.', type: 'error' });
         } finally {
             setIsSummarizing(false);
