@@ -41,8 +41,10 @@ export const useAppSetup = (onSetupComplete: (bot: Omit<Bot, 'id'>) => void) => 
             console.log('Colors:', data.colors, 'Length:', data.colors?.length);
             console.log('Text length:', data.text?.length);
             
-            // Ensure arrays exist
-            const logos = Array.isArray(data.logos) ? data.logos : [];
+            // Ensure arrays exist and filter out empty/invalid logos
+            const logos = Array.isArray(data.logos) 
+                ? data.logos.filter(logo => logo && typeof logo === 'string' && logo.trim().length > 0)
+                : [];
             const colors = Array.isArray(data.colors) && data.colors.length > 0 
                 ? data.colors 
                 : ['#4f46e5', '#1f2937', '#3b82f6', '#10b981', '#f59e0b'];
@@ -60,6 +62,7 @@ export const useAppSetup = (onSetupComplete: (bot: Omit<Bot, 'id'>) => void) => 
             setScrapedData(normalizedData);
             
             const title = data.title || 'Uusi Botti';
+            // Only set firstLogo if logos array has valid items
             const firstLogo = logos.length > 0 ? logos[0] : null;
             const firstColor = colors[0] || '#3b82f6';
             const secondColor = colors[1] || '#1f2937';
@@ -69,6 +72,7 @@ export const useAppSetup = (onSetupComplete: (bot: Omit<Bot, 'id'>) => void) => 
             console.log('Setting selectedLogo to:', firstLogo);
             console.log('Setting selectedColor to:', firstColor);
             console.log('Setting selectedHeaderColor to:', secondColor);
+            console.log('Available logos count:', logos.length);
             
             setBrandName(title);
             setSelectedLogo(firstLogo);
@@ -143,10 +147,10 @@ export const useAppSetup = (onSetupComplete: (bot: Omit<Bot, 'id'>) => void) => 
         // Use scraped data colors if available, otherwise use selected colors
         const finalPrimaryColor = selectedColor || scrapedData?.colors?.[0] || template.settings.appearance.primaryColor;
         const finalHeaderColor = selectedHeaderColor || scrapedData?.colors?.[1] || template.settings.appearance.headerColor;
-        const finalLogo = selectedLogo || scrapedData?.logos?.[0] || undefined;
+        const finalLogo = selectedLogo || scrapedData?.logos?.[0] || template.settings.appearance.brandLogo || '';
         const finalLogoGallery = scrapedData?.logos && scrapedData.logos.length > 0 
             ? scrapedData.logos 
-            : (selectedLogo ? [selectedLogo] : []);
+            : (selectedLogo ? [selectedLogo] : (template.settings.appearance.logoGallery || []));
         
         console.log('Final colors - Primary:', finalPrimaryColor, 'Header:', finalHeaderColor);
         console.log('Final logo:', finalLogo);
@@ -165,38 +169,39 @@ export const useAppSetup = (onSetupComplete: (bot: Omit<Bot, 'id'>) => void) => 
         // Käytä starter-avatit jos saatavilla, muuten käytä templaten avatareja
         const userAvatarGallery = starterAvatars.userAvatars.length > 0 
             ? starterAvatars.userAvatars 
-            : template.settings.avatarSettings.userAvatarGallery;
+            : (template.settings.avatarSettings.userAvatarGallery || []);
         const botAvatarGallery = starterAvatars.botAvatars.length > 0 
             ? starterAvatars.botAvatars 
-            : template.settings.avatarSettings.botAvatarGallery;
+            : (template.settings.avatarSettings.botAvatarGallery || []);
         const agentAvatarGallery = starterAvatars.agentAvatars.length > 0 
             ? starterAvatars.agentAvatars 
-            : template.settings.avatarSettings.agentAvatarGallery;
+            : (template.settings.avatarSettings.agentAvatarGallery || []);
 
         // Valitse ensimmäinen kuva jos lista ei ole tyhjä
-        const selectedUserAvatar = userAvatarGallery[0] || template.settings.avatarSettings.selectedUserAvatar;
-        const selectedBotAvatar = botAvatarGallery[0] || template.settings.avatarSettings.selectedBotAvatar;
-        const selectedAgentAvatar = agentAvatarGallery[0] || template.settings.avatarSettings.selectedAgentAvatar;
+        // Varmista, että arvot eivät koskaan ole undefined (Firestore ei salli undefined-arvoja)
+        const selectedUserAvatar = userAvatarGallery[0] || template.settings.avatarSettings.selectedUserAvatar || '';
+        const selectedBotAvatar = botAvatarGallery[0] || template.settings.avatarSettings.selectedBotAvatar || '';
+        const selectedAgentAvatar = agentAvatarGallery[0] || template.settings.avatarSettings.selectedAgentAvatar || '';
 
         const newBot: Omit<Bot, 'id'> = {
             name: brandName || scrapedData?.title || 'Uusi Botti',
             ownerId: user.uid,
-            templateId: template.id,
+            templateId: template.id || '',
             settings: {
                 ...template.settings,
                 appearance: {
                     ...template.settings.appearance,
                     brandName: brandName || scrapedData?.title || template.settings.appearance.brandName,
-                    brandLogo: finalLogo,
-                    logoGallery: finalLogoGallery,
+                    brandLogo: finalLogo || '',
+                    logoGallery: finalLogoGallery || [],
                     primaryColor: finalPrimaryColor,
                     headerColor: finalHeaderColor,
-                    websiteUrl: websiteUrl,
+                    websiteUrl: websiteUrl || '',
                 },
                 avatarSettings: {
-                    userAvatarGallery: userAvatarGallery,
-                    botAvatarGallery: botAvatarGallery,
-                    agentAvatarGallery: agentAvatarGallery,
+                    userAvatarGallery: userAvatarGallery || [],
+                    botAvatarGallery: botAvatarGallery || [],
+                    agentAvatarGallery: agentAvatarGallery || [],
                     selectedUserAvatar: selectedUserAvatar,
                     selectedBotAvatar: selectedBotAvatar,
                     selectedAgentAvatar: selectedAgentAvatar,

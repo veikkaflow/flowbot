@@ -26,6 +26,7 @@ export interface Message {
     sender: Sender;
     timestamp: string;
     isStreaming?: boolean;
+    agentId?: string; // Agent ID for agent messages, to identify which agent sent the message
 }
 
 export interface Submission {

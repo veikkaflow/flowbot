@@ -11,6 +11,7 @@ import { isSameDay, formatDateSeparator } from '../utils/time.ts';
 import { useLanguage } from '../context/LanguageContext.tsx';
 import { db } from '../services/firebase.ts';
 import { updateDoc, doc } from 'firebase/firestore';
+import { agentAvatars } from '@/data/avatars.ts';
 interface LiveAgentConsoleProps {
     conversation: Conversation;
     onSendMessage: (text: string) => void;
@@ -244,12 +245,18 @@ const LiveAgentConsole: React.FC<LiveAgentConsoleProps> = ({ conversation, onSen
                 {conversation.messages.map((msg, index) => {
                     const prevMsg = conversation.messages[index-1];
                     const showDateSeparator = !prevMsg || !isSameDay(new Date(msg.timestamp), new Date(prevMsg.timestamp));
-                    const senderName = msg.sender === 'agent' ? assignedAgent?.name : (msg.sender === 'bot' ? 'Botti' : undefined);
-
+                    
+                    // Find agent by message's agentId, fallback to current assigned agent
+                    const messageAgent = msg.sender === 'agent' && msg.agentId
+                        ? availableAgents.find(a => a.id === msg.agentId)
+                        : (msg.sender === 'agent' ? assignedAgent : null);
+                    
+                    const senderName = msg.sender === 'agent' ? messageAgent?.name : (msg.sender === 'bot' ? 'Botti' : undefined);
+                    const agentAvatar = messageAgent?.avatar || (msg.sender === 'agent' ? avatars.selectedAgentAvatar : undefined);
                     return (
                         <React.Fragment key={msg.id}>
                             {showDateSeparator && <DateSeparator timestamp={msg.timestamp} />}
-                            <MessageBubble message={msg} avatars={avatars} perspective="agent" senderName={senderName} />
+                            <MessageBubble message={msg} avatars={avatars} perspective="agent" senderName={senderName} agentAvatar={agentAvatar} />
                         </React.Fragment>
                     )
                 })}

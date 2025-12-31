@@ -53,6 +53,26 @@ const isObject = (item: any) => {
     return (item && typeof item === 'object' && !Array.isArray(item));
 };
 
+// Helper function to remove undefined values from objects recursively
+const removeUndefined = (obj: any): any => {
+    if (obj === null || obj === undefined) {
+        return null;
+    }
+    if (Array.isArray(obj)) {
+        return obj.map(item => removeUndefined(item));
+    }
+    if (typeof obj === 'object') {
+        const cleaned: any = {};
+        Object.keys(obj).forEach(key => {
+            const value = obj[key];
+            if (value !== undefined) {
+                cleaned[key] = removeUndefined(value);
+            }
+        });
+        return cleaned;
+    }
+    return obj;
+};
 
 /**
  * Custom Firestore converter for the Bot type.
@@ -60,7 +80,8 @@ const isObject = (item: any) => {
 export const botConverter: FirestoreDataConverter<Bot> = {
     toFirestore(bot: WithFieldValue<Bot>): DocumentData {
         const { id, ...data } = bot;
-        return data;
+        // Remove all undefined values before sending to Firestore
+        return removeUndefined(data);
     },
     fromFirestore(
         snapshot: QueryDocumentSnapshot,

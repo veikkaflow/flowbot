@@ -88,8 +88,18 @@ service cloud.firestore {
       allow read: if true;
       
       // Allow create for everyone (widgets need to create conversations)
-      // VisitorId is set by the widget, no authentication required
-      allow create: if true;
+      // But validate that botId exists and data structure is correct
+      allow create: if request.resource.data.botId != null &&
+                     request.resource.data.visitorId != null &&
+                     request.resource.data.visitorId is string &&
+                     request.resource.data.botId is string &&
+                     request.resource.data.visitorId.size() > 0 &&
+                     request.resource.data.botId.size() > 0 &&
+                     exists(/databases/$(database)/documents/bots/$(request.resource.data.botId)) &&
+                     (!('ownerId' in request.resource.data) || request.resource.data.ownerId == null) &&
+                     (!('agentId' in request.resource.data) || request.resource.data.agentId == null) &&
+                     request.resource.data.isEnded == false &&
+                     request.resource.data.status is string;
       
       // Allow update if:
       // 1. User is admin, OR
@@ -112,7 +122,10 @@ service cloud.firestore {
         // Ensure visitorId matches and we're only updating messages/visitorName (not botId or other critical fields)
         (resource.data.visitorId != null && 
          request.resource.data.visitorId == resource.data.visitorId &&
-         request.resource.data.botId == resource.data.botId)
+         request.resource.data.botId == resource.data.botId &&
+         // Prevent changing critical fields
+         (!('ownerId' in request.resource.data) || request.resource.data.ownerId == null) &&
+         (!('agentId' in request.resource.data) || request.resource.data.agentId == resource.data.agentId))
       );
       
       // Allow delete only for admins

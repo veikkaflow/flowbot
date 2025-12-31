@@ -13,6 +13,7 @@ interface MessageBubbleProps {
     perspective: 'customer' | 'agent';
     senderName?: string;
     language?: Language;
+    agentAvatar?: string;
 }
 
 const TypingIndicator: React.FC = () => (
@@ -23,7 +24,7 @@ const TypingIndicator: React.FC = () => (
     </div>
 );
 
-export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, avatars, perspective, senderName, language: propLanguage }) => {
+export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, avatars, perspective, senderName, agentAvatar, language: propLanguage }) => {
     const isUser = message.sender === 'user';
     const isBot = message.sender === 'bot';
     const isAgent = message.sender === 'agent';
@@ -49,7 +50,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, avatars, 
 
     const getAvatar = () => {
         if (isUser) return avatars.selectedUserAvatar;
-        if (isAgent) return avatars.selectedAgentAvatar;
+        if (isAgent) return agentAvatar || avatars.selectedAgentAvatar;
         return avatars.selectedBotAvatar; // Bot
     };
 

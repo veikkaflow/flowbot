@@ -31,7 +31,8 @@ const InboxDashboard: React.FC = () => {
             id: generateId(),
             text,
             sender: 'agent',
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            agentId: assignedAgent.id
         };
         
         await addMessage(

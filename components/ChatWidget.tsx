@@ -485,22 +485,32 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ visitorId }) => {
                                 ) : (
                                     <>
                                         <div className="flex-1 overflow-y-auto p-4 space-y-2 min-h-0">
-                                            {messages.map((msg, index) => {
-                                                const prevMsg = messages[index - 1];
-                                                const showDateSeparator = !prevMsg || !isSameDay(new Date(msg.timestamp), new Date(prevMsg.timestamp));
+                                            {(() => {
+                                                const availableAgents = activeBot?.settings.agents || [];
                                                 
-                                                return (
-                                                    <React.Fragment key={msg.id}>
-                                                        {showDateSeparator && <DateSeparator timestamp={msg.timestamp} language={botLanguage} />}
-                                                        <MessageBubble 
-                                                            message={msg} 
-                                                            avatars={activeBot.settings.avatarSettings} 
-                                                            perspective="customer"
-                                                            language={botLanguage}
-                                                        />
-                                                    </React.Fragment>
-                                                );
-                                            })}
+                                                return messages.map((msg, index) => {
+                                                    const prevMsg = messages[index - 1];
+                                                    const showDateSeparator = !prevMsg || !isSameDay(new Date(msg.timestamp), new Date(prevMsg.timestamp));
+                                                    
+                                                    // Find agent by message's agentId
+                                                    const messageAgent = msg.sender === 'agent' && msg.agentId
+                                                        ? availableAgents.find(a => a.id === msg.agentId)
+                                                        : null;
+                                                    
+                                                    return (
+                                                        <React.Fragment key={msg.id}>
+                                                            {showDateSeparator && <DateSeparator timestamp={msg.timestamp} language={botLanguage} />}
+                                                            <MessageBubble 
+                                                                message={msg} 
+                                                                avatars={activeBot.settings.avatarSettings} 
+                                                                perspective="customer"
+                                                                language={botLanguage}
+                                                                agentAvatar={messageAgent?.avatar}
+                                                            />
+                                                        </React.Fragment>
+                                                    );
+                                                });
+                                            })()}
                                             {/* Quick Replies appear inside the message flow */}
                                             {personality.quickReplies && personality.quickReplies.length > 0 && messages.length <= 1 && (
                                                 <div className="flex flex-wrap gap-2 pt-2 justify-start">

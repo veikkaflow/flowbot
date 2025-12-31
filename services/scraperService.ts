@@ -82,7 +82,18 @@ export const scrapeWebsite = async (
         
         // Extract known fields: colors, logos, content
         const colors = Array.isArray(data.colors) ? data.colors : [];
-        const logos = Array.isArray(data.logos) ? data.logos : [];
+        // Normalize logos: if they are objects with 'src' property, extract src; otherwise use as string
+        const logos = Array.isArray(data.logos) 
+            ? data.logos.map((logo: any) => {
+                if (typeof logo === 'string') {
+                    return logo;
+                } else if (logo && typeof logo === 'object' && logo.src) {
+                    return logo.src;
+                } else {
+                    return null;
+                }
+            }).filter((logo: string | null): logo is string => logo !== null && logo.trim().length > 0)
+            : [];
         const textContent = data.content || '';
         
         // Extract additional structured data (services, products, testimonials, etc.)

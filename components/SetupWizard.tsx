@@ -27,10 +27,19 @@ const LogoPicker: React.FC<{ logos: string[], selected: string | null, onSelect:
     const [failedLogos, setFailedLogos] = React.useState<Set<string>>(new Set());
     
     const handleImageError = (logo: string) => {
+        console.warn('Logo failed to load:', logo);
         setFailedLogos(prev => new Set(prev).add(logo));
     };
     
     const validLogos = logos.filter(logo => !failedLogos.has(logo));
+    
+    // Debug logging
+    React.useEffect(() => {
+        console.log('LogoPicker - Total logos:', logos.length);
+        console.log('LogoPicker - Valid logos:', validLogos.length);
+        console.log('LogoPicker - Failed logos:', failedLogos.size);
+        console.log('LogoPicker - Selected logo:', selected);
+    }, [logos, validLogos, failedLogos, selected]);
     
     return (
         <div>
@@ -39,7 +48,10 @@ const LogoPicker: React.FC<{ logos: string[], selected: string | null, onSelect:
                 {validLogos.map(logo => (
                     <button 
                         key={logo} 
-                        onClick={() => onSelect(logo)} 
+                        onClick={() => {
+                            console.log('Logo selected:', logo);
+                            onSelect(logo);
+                        }} 
                         className={`w-16 h-16 p-1 rounded-md bg-gray-700 ring-2 ${selected === logo ? 'ring-offset-2 ring-offset-gray-800 ring-white' : 'ring-transparent'}`}
                     >
                         <img 
@@ -47,12 +59,16 @@ const LogoPicker: React.FC<{ logos: string[], selected: string | null, onSelect:
                             alt="logo" 
                             className="w-full h-full object-contain" 
                             onError={() => handleImageError(logo)}
+                            onLoad={() => console.log('Logo loaded successfully:', logo)}
                         />
                     </button>
                 ))}
             </div>
             {validLogos.length === 0 && logos.length > 0 && (
                 <p className="text-xs text-gray-500 mt-2">Logoja ei voitu ladata. Kokeile lisätä logo manuaalisesti asetuksista.</p>
+            )}
+            {logos.length === 0 && (
+                <p className="text-xs text-gray-400 mt-2">Logoja ei löytynyt sivustolta.</p>
             )}
         </div>
     );
