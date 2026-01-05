@@ -536,6 +536,136 @@ body {
     --animation-color-4: #bde0fe;
 }
 
+/* Scoped CSS variables for embedded widget container */
+/* These ensure CSS variables are properly scoped and not affected by host site CSS */
+.flowbot-widget-container.theme-dark {
+    --color-primary: #3b82f6;
+    --color-primary-light: #60a5fa;
+    --admin-bg: #141414;
+    --admin-header-bg: rgba(31, 41, 55, 0.8);
+    --admin-sidebar-bg: #1f2937;
+    --admin-card-bg: #1f2937;
+    --admin-border: #374151;
+    --admin-text-primary: #f3f4f6;
+    --admin-text-secondary: #d1d5db;
+    --admin-text-muted: #9ca3af;
+    --admin-dropdown-bg: #1f2937;
+    --admin-dropdown-hover: #374151;
+    --admin-dropdown-selected: #374151;
+    --admin-toggle-bg: #4b5563;
+    --admin-toggle-checked: var(--color-primary);
+    --chat-bg: rgba(23, 23, 33, 0.8);
+    --chat-header-bg: rgba(30, 30, 42, 0.5);
+    --chat-footer-bg: rgba(30, 30, 42, 0.5);
+    --chat-input-bg: rgba(55, 55, 75, 0.7);
+    --chat-button-bg: rgba(55, 55, 75, 0.5);
+    --chat-border-color: rgba(255, 255, 255, 0.1);
+    --chat-text-primary: #f3f4f6;
+    --chat-text-secondary: #d1d5db;
+    --chat-text-muted: #9ca3af;
+    --chat-bubble-bot-bg: rgba(45, 45, 60, 0.9);
+    --chat-bubble-user-text: #ffffff;
+    --chat-header-text: #f3f4f6;
+    --animation-opacity: 0.5;
+    --animation-color-1: var(--color-primary);
+    --animation-color-2: var(--color-primary-light);
+    --animation-color-3: #23a6d5;
+    --animation-color-4: #23d5ab;
+}
+
+/* Force white text colors in dark mode for embedded widgets */
+/* Base color for all text in dark mode widget */
+.flowbot-widget-container.theme-dark {
+    color: #f3f4f6 !important;
+}
+
+/* Inherit color for all child elements by default */
+.flowbot-widget-container.theme-dark * {
+    color: inherit;
+}
+
+/* Override text colors to ensure visibility in dark mode */
+.flowbot-widget-container.theme-dark h1,
+.flowbot-widget-container.theme-dark h2,
+.flowbot-widget-container.theme-dark h3,
+.flowbot-widget-container.theme-dark h4,
+.flowbot-widget-container.theme-dark h5,
+.flowbot-widget-container.theme-dark h6,
+.flowbot-widget-container.theme-dark p,
+.flowbot-widget-container.theme-dark span,
+.flowbot-widget-container.theme-dark div:not([class*="bg-"]):not([style*="background"]),
+.flowbot-widget-container.theme-dark label {
+    color: #f3f4f6 !important;
+}
+
+/* Target Tailwind utility classes with CSS variables */
+.flowbot-widget-container.theme-dark [class*="text-[var(--chat-text-primary)"] {
+    color: #f3f4f6 !important;
+}
+
+/* Secondary text should be lighter gray but still visible */
+.flowbot-widget-container.theme-dark [class*="text-[var(--chat-text-secondary)"] {
+    color: #d1d5db !important;
+}
+
+/* Muted text should be visible but softer */
+.flowbot-widget-container.theme-dark [class*="text-[var(--chat-text-muted)"] {
+    color: #9ca3af !important;
+}
+
+/* Ensure input and textarea text is white in dark mode */
+.flowbot-widget-container.theme-dark input[type="text"],
+.flowbot-widget-container.theme-dark input[type="email"],
+.flowbot-widget-container.theme-dark textarea {
+    color: #f3f4f6 !important;
+}
+
+.flowbot-widget-container.theme-dark input::placeholder,
+.flowbot-widget-container.theme-dark textarea::placeholder {
+    color: #9ca3af !important;
+    opacity: 1;
+}
+
+/* Ensure button text is visible */
+.flowbot-widget-container.theme-dark button:not([style*="background"]):not([class*="bg-"]) {
+    color: #f3f4f6 !important;
+}
+
+.flowbot-widget-container.theme-light {
+    --color-primary: #3b82f6;
+    --color-primary-light: #60a5fa;
+    --admin-bg: #f9fafb;
+    --admin-header-bg: rgba(255, 255, 255, 0.8);
+    --admin-sidebar-bg: #ffffff;
+    --admin-card-bg: #ffffff;
+    --admin-border: #e5e7eb;
+    --admin-text-primary: #000000;
+    --admin-text-secondary: #1f2937;
+    --admin-text-muted: #374151;
+    --admin-dropdown-bg: #ffffff;
+    --admin-dropdown-hover: #f3f4f6;
+    --admin-dropdown-selected: #e5e7eb;
+    --admin-toggle-bg: #d1d5db;
+    --admin-toggle-checked: var(--color-primary);
+    --chat-bg: #ffffff;
+    --chat-header-bg: var(--color-primary);
+    --chat-footer-bg: #f9fafb;
+    --chat-input-bg: #f3f4f6;
+    --chat-button-bg: #e5e7eb;
+    --chat-border-color: #e5e7eb;
+    --chat-text-primary: #111827;
+    --chat-text-secondary: #4b5563;
+    --chat-text-muted: #6b7280;
+    --chat-bubble-bot-bg: #f3f4f6;
+    --chat-bubble-user-text: #ffffff;
+    --chat-header-text: #ffffff;
+    --animation-opacity: 0.2;
+    --animation-color-1: var(--color-primary);
+    --animation-color-2: var(--color-primary-light);
+    --animation-color-3: #a0c4ff;
+    --animation-color-4: #bde0fe;
+}
+
 /* Global admin styling - applies to all admin pages */
 .theme-dark input[type="text"],
 .theme-dark input[type="url"],

@@ -102,6 +102,9 @@ const PublicWidgetLoader: React.FC<PublicWidgetLoaderProps> = ({ botId }) => {
         '--color-primary': bot.settings.appearance.primaryColor,
     } as React.CSSProperties;
 
+    // Determine the theme class based on settings (defaulting to light if undefined)
+    const themeClass = bot.settings.appearance.themeMode === 'dark' ? 'theme-dark' : 'theme-light';
+
     return (
         <div 
             style={{
@@ -115,7 +118,7 @@ const PublicWidgetLoader: React.FC<PublicWidgetLoaderProps> = ({ botId }) => {
                 pointerEvents: 'none',
                 zIndex: 9999,
             }} 
-            className="flowbot-widget-container"
+            className={`flowbot-widget-container ${themeClass}`}
         >
             <div style={{ 
                 pointerEvents: 'auto',

@@ -115,6 +115,7 @@ export interface BehaviorSettings {
     askForName: boolean;
     askForContactInfo: 'never' | 'optional' | 'required';
     leadGenHook: string;
+    contactRule?: string; // Rule that defines when AI should use submitContactForm tool
     operatingMode: 'bot_only' | 'bot_then_agent' | 'agents_only';
     allowNameChange: boolean;
     showContactButton: boolean;

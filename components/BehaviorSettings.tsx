@@ -16,6 +16,11 @@ const BehaviorSettings: React.FC = () => {
         (value) => updateSettings({ leadGenHook: value })
     );
 
+    const [contactRule, setContactRule, isSavingContactRule] = useDebouncedSave(
+        behavior?.contactRule || '',
+        (value) => updateSettings({ contactRule: value })
+    );
+
     const [helpText, setHelpText, isSavingHelp] = useDebouncedSave(
         behavior?.helpText,
         (value) => updateSettings({ helpText: value })
@@ -125,6 +130,26 @@ const BehaviorSettings: React.FC = () => {
                         borderColor: 'var(--admin-border, #374151)'
                     }}
                  />
+            </div>
+
+            <div className="p-6 rounded-lg border" style={{
+                backgroundColor: 'var(--admin-card-bg, #1f2937)',
+                borderColor: 'var(--admin-border, #374151)'
+            }}>
+                <h4 className="font-semibold" style={{ color: 'var(--admin-text-primary, #f3f4f6)' }}>{t('beh.contact_rule')}</h4>
+                <p className="text-sm mt-1 mb-2" style={{ color: 'var(--admin-text-secondary, #d1d5db)' }}>{t('beh.contact_rule_desc')}</p>
+                <textarea
+                    rows={3}
+                    value={contactRule}
+                    onChange={e => setContactRule(e.target.value)}
+                    className="w-full px-3 py-2 rounded-md border"
+                    placeholder={t('beh.contact_rule_placeholder')}
+                    style={{
+                        backgroundColor: 'var(--admin-sidebar-bg, #374151)',
+                        color: 'var(--admin-text-primary, #f3f4f6)',
+                        borderColor: 'var(--admin-border, #374151)'
+                    }}
+                />
             </div>
             
             <div className="p-6 rounded-lg border" style={{

@@ -1,5 +1,6 @@
 import * as functions from "firebase-functions";
 import { GoogleGenAI, Type, FunctionDeclaration } from "@google/genai";
+import * as admin from "firebase-admin";
 import {
   Conversation,
   Message,
@@ -7,6 +8,13 @@ import {
   KnowledgeSource,
   AnalysisResult,
 } from "./types";
+import { config } from "./config";
+
+// Initialize Firebase Admin if not already initialized
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
+const db = admin.firestore();
 
 // Gemini API -avain Firebase Functions -ympäristömuuttujasta
 const GEMINI_API_KEY = functions.config().gemini?.api_key;
@@ -32,20 +40,92 @@ function getAiClient() {
 // Get Products Tool (same as client-side)
 const getProductsTool: FunctionDeclaration = {
   name: "getProducts",
-  description: "Hae tuotetietoja tuotekatalogista. Voit suodattaa tuotteita kategorian tai hakusanan perusteella.",
+  description: config.tools.getProducts.description,
   parameters: {
     type: Type.OBJECT,
     properties: {
       category: {
         type: Type.STRING,
-        description: 'Tuotekategoria, esim. "televisiot", "puhelimet", "kamerat".',
+        description: config.tools.getProducts.parameters.category,
       },
       searchTerm: {
         type: Type.STRING,
-        description: 'Vapaa hakusana, jolla etsiä tuotteita nimestä tai kuvauksesta, esim. "OLED" tai "Samsung".',
+        description: config.tools.getProducts.parameters.searchTerm,
       },
     },
     required: [],
+  },
+};
+
+// Submit Contact Form Tool
+const submitContactFormTool: FunctionDeclaration = {
+  name: "submitContactForm",
+  description: config.tools.submitContactForm.description,
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      name: {
+        type: Type.STRING,
+        description: config.tools.submitContactForm.parameters.name,
+      },
+      email: {
+        type: Type.STRING,
+        description: config.tools.submitContactForm.parameters.email,
+      },
+      message: {
+        type: Type.STRING,
+        description: config.tools.submitContactForm.parameters.message,
+      },
+    },
+    required: ["name", "email", "message"],
+  },
+};
+
+// Submit Quote Request Tool
+const submitQuoteFormTool: FunctionDeclaration = {
+  name: "submitQuoteRequest",
+  description: config.tools.submitQuoteRequest.description,
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      name: {
+        type: Type.STRING,
+        description: config.tools.submitQuoteRequest.parameters.name,
+      },
+      email: {
+        type: Type.STRING,
+        description: config.tools.submitQuoteRequest.parameters.email,
+      },
+      company: {
+        type: Type.STRING,
+        description: config.tools.submitQuoteRequest.parameters.company,
+      },
+      details: {
+        type: Type.STRING,
+        description: config.tools.submitQuoteRequest.parameters.details,
+      },
+    },
+    required: ["name", "email", "details"],
+  },
+};
+
+// Search Knowledge Base Tool
+const searchKnowledgeBaseTool: FunctionDeclaration = {
+  name: "searchKnowledgeBase",
+  description: config.tools.searchKnowledgeBase.description,
+  parameters: {
+    type: Type.OBJECT,
+    properties: {
+      query: {
+        type: Type.STRING,
+        description: config.tools.searchKnowledgeBase.parameters.query,
+      },
+      maxResults: {
+        type: Type.NUMBER,
+        description: config.tools.searchKnowledgeBase.parameters.maxResults,
+      },
+    },
+    required: ["query"],
   },
 };
 
@@ -55,16 +135,247 @@ async function getProductsFromApi(category?: string, searchTerm?: string) {
     console.log(`Haetaan tuotteita... Kategoria: ${category}, Hakusana: ${searchTerm}`);
     
     // Simuloitu API-vastaus
-    const mockApiResponse = [
-      { id: "TV001", name: 'Samsung 55" 4K Smart OLED TV', price: "1299€", stock: 15, description: "Upea kuvanlaatu ja ohuet reunat." },
-      { id: "TV002", name: 'LG 65" QNED MiniLED TV', price: "1899€", stock: 8, description: "Kirkas kuva ja erinomainen kontrasti." },
-      { id: "TV003", name: 'Sony 50" Bravia Full HD', price: "799€", stock: 22, description: "Luotettava perustelevisio hyvällä kuvalla." },
-    ];
+    const mockApiResponse = config.mockData.products;
 
     return mockApiResponse;
   } catch (error) {
     console.error("API call to getProducts failed:", error);
-    return { error: "Tuotteiden haku epäonnistui." };
+    return { error: config.messages.products.error };
+  }
+}
+
+// Submit Contact Form
+async function submitContactForm(
+  conversationId: string,
+  botId: string,
+  visitorId: string,
+  visitorName: string,
+  data: { name: string; email: string; message: string }
+) {
+  console.log(`[FORM] submitContactForm called with:`, {
+    conversationId,
+    botId,
+    visitorId,
+    visitorName,
+    formData: { name: data.name, email: data.email, messageLength: data.message?.length || 0 }
+  });
+
+  try {
+    const submission = {
+      id: `sub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      botId,
+      conversationId,
+      visitorId,
+      visitorName: data.name || visitorName,
+      type: "contact",
+      data: {
+        name: data.name,
+        email: data.email,
+        message: data.message,
+      },
+      createdAt: new Date().toISOString(),
+      isHandled: false,
+    };
+
+    console.log(`[FORM] Created submission object:`, {
+      id: submission.id,
+      type: submission.type,
+      visitorName: submission.visitorName
+    });
+
+    const convRef = db.collection("conversations").doc(conversationId);
+    console.log(`[FORM] Checking if conversation document exists: ${conversationId}`);
+    
+    // Tarkista onko dokumentti olemassa
+    const docSnapshot = await convRef.get();
+    console.log(`[FORM] Document exists: ${docSnapshot.exists}`);
+    
+    if (!docSnapshot.exists) {
+      // Jos dokumentti ei ole olemassa, luo se ensin
+      console.log(`[FORM] Document does not exist, creating new conversation document`);
+      await convRef.set({
+        botId,
+        visitorId,
+        visitorName: data.name || visitorName,
+        messages: [],
+        submissions: [submission],
+        isRead: false,
+        isEnded: false,
+        status: 'pending',
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+      console.log(`[FORM] Successfully created new conversation document with submission`);
+    } else {
+      // Jos dokumentti on olemassa, päivitä se
+      console.log(`[FORM] Document exists, updating with arrayUnion`);
+      await convRef.update({
+        submissions: admin.firestore.FieldValue.arrayUnion(submission),
+      });
+      console.log(`[FORM] Successfully updated conversation document with submission`);
+    }
+
+    const result = {
+      success: true,
+      message: config.messages.contactForm.success,
+    };
+    console.log(`[FORM] Contact form submitted successfully for conversation ${conversationId}`, result);
+    return result;
+  } catch (error: any) {
+    console.error("[FORM] Error submitting contact form:", error);
+    console.error("[FORM] Error details:", {
+      message: error.message,
+      code: error.code,
+      stack: error.stack
+    });
+    return {
+      success: false,
+      error: config.messages.contactForm.error,
+    };
+  }
+}
+
+// Submit Quote Request
+async function submitQuoteRequest(
+  conversationId: string,
+  botId: string,
+  visitorId: string,
+  visitorName: string,
+  data: { name: string; email: string; company?: string; details: string }
+) {
+  console.log(`[FORM] submitQuoteRequest called with:`, {
+    conversationId,
+    botId,
+    visitorId,
+    visitorName,
+    formData: { name: data.name, email: data.email, company: data.company, detailsLength: data.details?.length || 0 }
+  });
+
+  try {
+    const submission = {
+      id: `sub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      botId,
+      conversationId,
+      visitorId,
+      visitorName: data.name || visitorName,
+      type: "quote",
+      data: {
+        name: data.name,
+        email: data.email,
+        company: data.company || "",
+        details: data.details,
+      },
+      createdAt: new Date().toISOString(),
+      isHandled: false,
+    };
+
+    console.log(`[FORM] Created quote submission object:`, {
+      id: submission.id,
+      type: submission.type,
+      visitorName: submission.visitorName
+    });
+
+    const convRef = db.collection("conversations").doc(conversationId);
+    console.log(`[FORM] Checking if conversation document exists: ${conversationId}`);
+    
+    // Tarkista onko dokumentti olemassa
+    const docSnapshot = await convRef.get();
+    console.log(`[FORM] Document exists: ${docSnapshot.exists}`);
+    
+    if (!docSnapshot.exists) {
+      // Jos dokumentti ei ole olemassa, luo se ensin
+      console.log(`[FORM] Document does not exist, creating new conversation document`);
+      await convRef.set({
+        botId,
+        visitorId,
+        visitorName: data.name || visitorName,
+        messages: [],
+        submissions: [submission],
+        isRead: false,
+        isEnded: false,
+        status: 'pending',
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+      console.log(`[FORM] Successfully created new conversation document with quote submission`);
+    } else {
+      // Jos dokumentti on olemassa, päivitä se
+      console.log(`[FORM] Document exists, updating with arrayUnion`);
+      await convRef.update({
+        submissions: admin.firestore.FieldValue.arrayUnion(submission),
+      });
+      console.log(`[FORM] Successfully updated conversation document with quote submission`);
+    }
+
+    const result = {
+      success: true,
+      message: config.messages.quoteRequest.success,
+    };
+    console.log(`[FORM] Quote request submitted successfully for conversation ${conversationId}`, result);
+    return result;
+  } catch (error: any) {
+    console.error("[FORM] Error submitting quote request:", error);
+    console.error("[FORM] Error details:", {
+      message: error.message,
+      code: error.code,
+      stack: error.stack
+    });
+    return {
+      success: false,
+      error: config.messages.quoteRequest.error,
+    };
+  }
+}
+
+// Search Knowledge Base
+async function searchKnowledgeBase(
+  settings: AppSettings,
+  query: string,
+  maxResults: number = 5
+) {
+  try {
+    if (!settings.knowledgeBase || settings.knowledgeBase.length === 0) {
+      return {
+        success: false,
+        message: config.messages.knowledgeBase.empty,
+        results: [],
+      };
+    }
+
+    // Limit maxResults to 1-10
+    const limit = Math.min(Math.max(1, maxResults || 5), 10);
+
+    // Use existing function to select relevant sources
+    const selectedIds = await selectRelevantKnowledgeSources(query, settings.knowledgeBase);
+    
+    // Limit to requested number of results
+    const limitedIds = selectedIds.slice(0, limit);
+
+    const results = settings.knowledgeBase
+      .filter((kb, idx) => limitedIds.includes(idx.toString()))
+      .map((kb) => {
+        const truncatedContent = kb.content.length > 2000
+          ? kb.content.substring(0, 2000) + "..."
+          : kb.content;
+
+        return {
+          name: kb.name,
+          type: kb.type,
+          content: truncatedContent,
+          fullLength: kb.content.length,
+        };
+      });
+
+    return {
+      success: true,
+      results,
+      count: results.length,
+    };
+  } catch (error: any) {
+    console.error("Error searching knowledge base:", error);
+    return {
+      success: false,
+      error: config.messages.knowledgeBase.error,
+      results: [],
+    };
   }
 }
 
@@ -81,26 +392,7 @@ async function needsKnowledgeBase(
       .map((m) => `${m.sender}: ${m.text}`)
       .join("\n");
     
-    const analysisPrompt = `Analysoi seuraava käyttäjän kysymys ja keskusteluhistoria.
-
-Keskusteluhistoria:
-${conversationContext || "(Ei aiempaa keskustelua)"}
-
-Uusi kysymys: "${userQuestion}"
-
-Päätä, tarvitaanko tietopankin tietoja vastataksesi tähän kysymykseen.
-Tietopankkia tarvitaan jos:
-- Kysymys koskee tuotteita, palveluja tai yrityksen tietoja
-- Kysymys vaatii spesifistä tietoa (hinnat, tekniset tiedot, dokumentit, jne.)
-- Kysymys liittyy dokumentteihin tai tiedostoihin tietopankissa
-
-Tietopankkia EI tarvita jos:
-- Kysymys on yleinen tervehdys tai kiitos
-- Vastaus löytyy asetuksista kuten qa osiosta tai system instructionissa
-- Kysymys on keskustelua tai small talk
-- Vastaus voidaan antaa yleisellä tiedolla ilman dokumentteja
-
-Palauta vastaus JSON-muodossa: { "needsKnowledgeBase": true/false, "reason": "lyhyt selitys" }`;
+    const analysisPrompt = config.rag.needsKnowledgeBase.prompt(conversationContext, userQuestion);
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
@@ -112,11 +404,11 @@ Palauta vastaus JSON-muodossa: { "needsKnowledgeBase": true/false, "reason": "ly
           properties: {
             needsKnowledgeBase: {
               type: Type.BOOLEAN,
-              description: "Tarvitaanko tietopankkia"
+              description: config.rag.needsKnowledgeBase.responseSchema.needsKnowledgeBase
             },
             reason: {
               type: Type.STRING,
-              description: "Lyhyt selitys päätökselle"
+              description: config.rag.needsKnowledgeBase.responseSchema.reason
             }
           },
           required: ["needsKnowledgeBase", "reason"]
@@ -159,15 +451,10 @@ async function selectRelevantKnowledgeSources(
       preview: kb.content.substring(0, 300),
     }));
     
-    const selectionPrompt = `Käyttäjä kysyy: "${userQuestion}"
-
-Seuraavat knowledge source -tiedostot ovat saatavilla:
-${knowledgeSourceMetadata.map((kb) =>
-  `[${kb.id}] ${kb.name} (${kb.type})\nEsikatselu: ${kb.preview}...`
-).join("\n\n")}
-
-Valitse 3-5 tiedostoa, jotka ovat todennäköisimmin relevantteja vastataksesi kysymykseen.
-Palauta vastaus JSON-muodossa listana ID-numeroita, esim: ["0", "2", "5"]`;
+    const knowledgeSourceMetadataStr = knowledgeSourceMetadata.map((kb) =>
+      `[${kb.id}] ${kb.name} (${kb.type})\nEsikatselu: ${kb.preview}...`
+    ).join("\n\n");
+    const selectionPrompt = config.rag.selectRelevantSources.prompt(userQuestion, knowledgeSourceMetadataStr);
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
@@ -180,7 +467,7 @@ Palauta vastaus JSON-muodossa listana ID-numeroita, esim: ["0", "2", "5"]`;
             selectedIds: {
               type: Type.ARRAY,
               items: { type: Type.STRING },
-              description: "Lista valittujen tiedostojen ID-numeroista (3-5 kpl)"
+              description: config.rag.selectRelevantSources.responseSchema.selectedIds
             }
           },
           required: ["selectedIds"]
@@ -307,31 +594,60 @@ async function buildChatContents(
 
 // Rakentaa system instruction
 function buildSystemInstruction(settings: AppSettings): string {
-  let instruction = `You are a helpful customer service chatbot for ${settings.appearance.brandName}.\n`;
-  instruction += `Your tone should be: ${settings.personality.tone}.\n`;
+  let instruction = config.systemInstructions.base.intro(settings.appearance.brandName);
+  instruction += config.systemInstructions.base.tone(settings.personality.tone);
 
   const botLanguage = settings.behavior.language || "fi";
-  if (botLanguage === "en") {
-    instruction += `Always respond in English. All your responses must be in English.\n`;
-  } else {
-    instruction += `Always respond in Finnish. All your responses must be in Finnish.\n`;
-  }
+  instruction += config.systemInstructions.base.language[botLanguage];
 
   if (settings.behavior.askForName) {
-    instruction += `Always ask for the customer's name at the start of the conversation.\n`;
+    instruction += config.systemInstructions.base.askForName;
   }
 
-  if (settings.behavior.leadGenHook) {
-    instruction += `Ask customer to leave their contact details when this hook is triggered: ${settings.behavior.leadGenHook}\n`;
+  // Parannettu työkaluohjeistus
+  instruction += config.systemInstructions.tools.header;
+  instruction += config.systemInstructions.tools.intro;
+  
+  instruction += config.systemInstructions.tools.contactForm.header;
+  if (settings.behavior.contactRule && settings.behavior.contactRule.trim()) {
+    // Käytä käyttäjän määrittelemää sääntöä
+    instruction += `   ${settings.behavior.contactRule}\n`;
+  } else {
+    // Oletussääntö
+    config.systemInstructions.tools.contactForm.defaultRules.forEach(rule => {
+      instruction += `   ${rule}\n`;
+    });
   }
+  instruction += config.systemInstructions.tools.contactForm.important;
+  
+  instruction += config.systemInstructions.tools.quoteRequest.header;
+  if (settings.behavior.leadGenHook && settings.behavior.leadGenHook.trim()) {
+    // Käytä käyttäjän määrittelemää sääntöä
+    instruction += `   ${settings.behavior.leadGenHook}\n`;
+  } else {
+    // Oletussääntö
+    config.systemInstructions.tools.quoteRequest.defaultRules.forEach(rule => {
+      instruction += `   ${rule}\n`;
+    });
+  }
+  instruction += config.systemInstructions.tools.quoteRequest.important;
+  
+  instruction += config.systemInstructions.tools.getProducts;
+  instruction += config.systemInstructions.tools.searchKnowledgeBase;
+  
+  instruction += config.systemInstructions.tools.usageGuidelines.header;
+  config.systemInstructions.tools.usageGuidelines.rules.forEach(rule => {
+    instruction += `${rule}\n`;
+  });
+  instruction += `\n`;
 
   instruction += `${settings.personality.customInstruction}\n\n`;
 
   const qnaData = settings.qnaData || [];
   if (qnaData.length > 0) {
-    instruction += "Vastaa näihin kysymyksiin tarkasti seuraavasti:\n";
+    instruction += config.systemInstructions.qna.header;
     qnaData.forEach((data) => {
-      instruction += `Q: ${data.name}\nA: ${data.content}\n`;
+      instruction += config.systemInstructions.qna.format(data.name, data.content);
     });
   }
 
@@ -348,53 +664,150 @@ export const geminiChatStream = functions.https.onCall(
       const systemInstruction = buildSystemInstruction(settings);
 
       // Vaihe A: Ensimmäinen kutsu Geminille työkalujen kanssa
+      const allTools = [
+        getProductsTool,
+        submitContactFormTool,
+        submitQuoteFormTool,
+        searchKnowledgeBaseTool,
+      ];
+
       const initialResponse = await ai.models.generateContent({
         model: "gemini-2.5-flash",
         contents: contents,
         config: {
           systemInstruction: systemInstruction,
-          tools: [{ functionDeclarations: [getProductsTool] }],
+          tools: [{ functionDeclarations: allTools }],
         },
       });
 
-      const functionCall = initialResponse.functionCalls?.[0];
+      const functionCalls = initialResponse.functionCalls || [];
+      console.log(`[DEBUG] Function calls received: ${JSON.stringify(functionCalls)}`);
+      console.log(`[FORM] Checking for form-related function calls...`);
+      const formCalls = functionCalls.filter(fc => fc.name === "submitContactForm" || fc.name === "submitQuoteRequest");
+      if (formCalls.length > 0) {
+        console.log(`[FORM] Found ${formCalls.length} form-related function call(s):`, formCalls.map(fc => ({ name: fc.name, args: fc.args })));
+      }
+      
+      // If there are function calls, process them
+      if (functionCalls.length > 0) {
+        console.log(`[DEBUG] Processing ${functionCalls.length} function call(s)`);
+        const functionResponses: any[] = [];
+        let updatedContents = [...contents];
 
-      if (functionCall && functionCall.name === "getProducts") {
-        const args = functionCall.args as { category?: string; searchTerm?: string };
-        const apiResult = await getProductsFromApi(args.category, args.searchTerm);
+        // Process each function call
+        for (const functionCall of functionCalls) {
+          let functionResult: any;
 
-        // Vaihe C: Lähetetään API:n tulos takaisin Geminille
+          if (functionCall.name === "getProducts") {
+            const args = functionCall.args as { category?: string; searchTerm?: string };
+            functionResult = await getProductsFromApi(args.category, args.searchTerm);
+            functionResponses.push({
+              name: "getProducts",
+              response: { result: functionResult },
+            });
+          } else if (functionCall.name === "submitContactForm") {
+            const args = functionCall.args as { name: string; email: string; message: string };
+            console.log(`[FORM] Processing submitContactForm function call:`, {
+              conversationId: conversation.id,
+              args: { name: args.name, email: args.email, messageLength: args.message?.length || 0 }
+            });
+            functionResult = await submitContactForm(
+              conversation.id,
+              conversation.botId,
+              conversation.visitorId,
+              conversation.visitorName,
+              args
+            );
+            console.log(`[FORM] submitContactForm result:`, functionResult);
+            functionResponses.push({
+              name: "submitContactForm",
+              response: functionResult,
+            });
+            console.log(`[FORM] Added submitContactForm response to functionResponses array`);
+          } else if (functionCall.name === "submitQuoteRequest") {
+            const args = functionCall.args as { name: string; email: string; company?: string; details: string };
+            console.log(`[FORM] Processing submitQuoteRequest function call:`, {
+              conversationId: conversation.id,
+              args: { name: args.name, email: args.email, company: args.company, detailsLength: args.details?.length || 0 }
+            });
+            functionResult = await submitQuoteRequest(
+              conversation.id,
+              conversation.botId,
+              conversation.visitorId,
+              conversation.visitorName,
+              args
+            );
+            console.log(`[FORM] submitQuoteRequest result:`, functionResult);
+            functionResponses.push({
+              name: "submitQuoteRequest",
+              response: functionResult,
+            });
+            console.log(`[FORM] Added submitQuoteRequest response to functionResponses array`);
+          } else if (functionCall.name === "searchKnowledgeBase") {
+            const args = functionCall.args as { query: string; maxResults?: number };
+            functionResult = await searchKnowledgeBase(settings, args.query, args.maxResults);
+            functionResponses.push({
+              name: "searchKnowledgeBase",
+              response: functionResult,
+            });
+          }
+
+          // Add function call to contents
+          updatedContents.push({
+            role: "model",
+            parts: [{ functionCall: functionCall }],
+          });
+        }
+
+        // Add all function responses to contents
+        console.log(`[FORM] Preparing to send function responses back to Gemini API`);
+        console.log(`[FORM] Function responses count: ${functionResponses.length}`);
+        functionResponses.forEach((fr, index) => {
+          console.log(`[FORM] Function response ${index + 1}:`, {
+            name: fr.name,
+            success: fr.response?.success,
+            message: fr.response?.message,
+            error: fr.response?.error
+          });
+        });
+
+        updatedContents.push({
+          role: "user",
+          parts: functionResponses.map((fr) => ({
+            functionResponse: fr,
+          })),
+        });
+
+        console.log(`[FORM] Sending function responses to Gemini API for final response`);
+        // Vaihe C: Lähetetään työkalujen tulokset takaisin Geminille
         const finalResponse = await ai.models.generateContent({
           model: "gemini-2.5-flash",
-          contents: [
-            ...contents,
-            {
-              role: "model",
-              parts: [{ functionCall: functionCall }],
-            },
-            {
-              role: "user",
-              parts: [{
-                functionResponse: {
-                  name: "getProducts",
-                  response: { result: apiResult },
-                },
-              }],
-            },
-          ],
+          contents: updatedContents,
           config: {
             systemInstruction: systemInstruction,
+            tools: [{ functionDeclarations: allTools }],
           },
         });
 
+        console.log(`[FORM] Received final response from Gemini API`);
         const finalText = finalResponse.text;
+        console.log(`[FORM] Final response text length: ${finalText?.length || 0}`);
+        console.log(`[FORM] Final response text preview: ${finalText?.substring(0, 200) || '(empty)'}`);
+        
         if (!finalText) {
+          console.error(`[FORM] ERROR: Empty response from Gemini API after function call`);
+          console.error(`[FORM] Function calls that were processed:`, functionCalls.map(fc => ({ name: fc.name, args: fc.args })));
+          console.error(`[FORM] Function responses that were sent:`, functionResponses);
           throw new Error("Empty response from Gemini API");
         }
 
+        console.log(`[FORM] Successfully returning final response to client`);
         return { text: finalText };
       } else {
+        // No function calls, return initial response
         const initialText = initialResponse.text;
+        console.log(`[DEBUG] No function calls - bot responded with text only`);
+        console.log(`[DEBUG] Response text: ${initialText?.substring(0, 200)}`);
         if (!initialText) {
           throw new Error("Empty response from Gemini API");
         }
@@ -424,12 +837,7 @@ export const geminiConversationSummary = functions.https.onCall(
         .map((m) => `${m.sender}: ${m.text}`)
         .join("\n");
 
-      const prompt = `Provide a concise, one-paragraph summary of the following customer service chat conversation. The summary should be in Finnish.
-
-Conversation:
-${conversationText.substring(0, 15000)}
-
-Summary:`;
+      const prompt = config.analysis.conversationSummary.prompt(conversationText);
 
       const result = await ai.models.generateContent({
         model: "gemini-2.5-flash",
@@ -467,12 +875,7 @@ export const geminiGenerateTrainingData = functions.https.onCall(
       const textToUse = text.substring(0, 15000);
       console.log(`Using ${textToUse.length} characters for Q&A generation`);
 
-      const prompt = `From the following text from the website "${title}", generate a list of 5-10 frequently asked questions and their corresponding answers. The questions should be things a customer would likely ask.
-
-Text:
-${textToUse}
-
-Return the result as a JSON array of objects, where each object has a "question" and "answer" property.`;
+      const prompt = config.analysis.trainingData.prompt(textToUse, title);
 
       const result = await ai.models.generateContent({
         model: "gemini-2.5-flash",
@@ -484,8 +887,8 @@ Return the result as a JSON array of objects, where each object has a "question"
             items: {
               type: Type.OBJECT,
               properties: {
-                question: { type: Type.STRING, description: "The customer's question." },
-                answer: { type: Type.STRING, description: "The answer to the question." }
+                question: { type: Type.STRING, description: config.analysis.trainingData.responseSchema.question },
+                answer: { type: Type.STRING, description: config.analysis.trainingData.responseSchema.answer }
               },
               required: ["question", "answer"]
             }
@@ -543,12 +946,7 @@ export const geminiAnalyzeConversations = functions.https.onCall(
         jsonString = "Error: Could not serialize conversation data due to circular references.";
       }
 
-      const prompt = `Analyze the following customer service chat conversations. Provide a concise summary, list the key feedback points from customers, and suggest 3 concrete improvements for the business based on the conversations.
-
-Conversations:
-${jsonString.substring(0, 15000)}
-
-Return the result as a single JSON object.`;
+      const prompt = config.analysis.conversations.prompt(jsonString);
 
       const result = await ai.models.generateContent({
         model: "gemini-2.5-pro",
@@ -558,15 +956,15 @@ Return the result as a single JSON object.`;
           responseSchema: {
             type: Type.OBJECT,
             properties: {
-              summary: { type: Type.STRING, description: "A brief summary of all conversations." },
+              summary: { type: Type.STRING, description: config.analysis.conversations.responseSchema.summary },
               keyFeedback: {
                 type: Type.ARRAY,
-                description: "A list of key feedback points or common issues.",
+                description: config.analysis.conversations.responseSchema.keyFeedback,
                 items: { type: Type.STRING }
               },
               improvementSuggestions: {
                 type: Type.ARRAY,
-                description: "A list of actionable improvement suggestions for the business.",
+                description: config.analysis.conversations.responseSchema.improvementSuggestions,
                 items: { type: Type.STRING }
               }
             },
@@ -603,8 +1001,8 @@ export const geminiTranslateText = functions.https.onCall(
       const ai = getAiClient();
 
       const prompt = targetLanguage === "en"
-        ? `Translate the following Finnish text to English. Only return the translation, nothing else:\n\n${text}`
-        : `Translate the following English text to Finnish. Only return the translation, nothing else:\n\n${text}`;
+        ? config.translation.fiToEn(text)
+        : config.translation.enToFi(text);
 
       const result = await ai.models.generateContent({
         model: "gemini-2.5-flash",
