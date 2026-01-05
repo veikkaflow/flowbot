@@ -1,0 +1,591 @@
+/* FlowBot Global Styles */
+
+/* Body Styles */
+body {
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Basic Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.95); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; transform: scale(1); }
+    to { opacity: 0; transform: scale(0.95); }
+}
+
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-6px); }
+}
+
+@keyframes float {
+    0% { box-shadow: 0 5px 15px 0px rgba(0,0,0,0.6); transform: translateY(0px); }
+    50% { box-shadow: 0 25px 15px 0px rgba(0,0,0,0.2); transform: translateY(-10px); }
+    100% { box-shadow: 0 5px 15px 0px rgba(0,0,0,0.6); transform: translateY(0px); }
+}
+
+@keyframes bouncing-dots {
+    0% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+    100% { transform: translateY(0); }
+}
+
+.animate-fadeIn { animation: fadeIn 0.3s ease-out forwards; }
+.animate-fadeOut { animation: fadeOut 0.3s ease-in forwards; }
+.animate-bounce { animation: bounce 1s infinite; }
+.animate-float { animation: float 3s ease-in-out infinite; }
+
+/* Background Animations */
+.animation-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    z-index: 0;
+}
+
+/* Aurora Circles */
+.aurora-shape {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(100px);
+    opacity: var(--animation-opacity, 0.3);
+    animation: aurora-bg 40s infinite linear;
+}
+
+@keyframes aurora-bg {
+    0% { transform: translate(0, 0) rotate(0deg); }
+    25% { transform: translate(100px, 80px) rotate(90deg); }
+    50% { transform: translate(20px, -100px) rotate(180deg); }
+    75% { transform: translate(-90px, 40px) rotate(270deg); }
+    100% { transform: translate(0, 0) rotate(360deg); }
+}
+
+/* Light Waves */
+.wave {
+    background: radial-gradient(circle at 50% 50%, var(--animation-color-1), transparent 70%);
+    position: absolute;
+    border-radius: 45%;
+    animation: wave-effect 15s infinite ease-in-out;
+    opacity: var(--animation-opacity, 0.1);
+}
+
+.wave-1 {
+    width: 400px;
+    height: 400px;
+    top: -150px;
+    left: -100px;
+    animation-delay: 0s;
+}
+
+.wave-2 {
+    width: 500px;
+    height: 500px;
+    bottom: -200px;
+    right: -150px;
+    animation-delay: -5s;
+}
+
+@keyframes wave-effect {
+    0% { transform: translateX(0) translateY(0) rotate(0); }
+    50% { transform: translateX(20px) translateY(40px) rotate(180deg); }
+    100% { transform: translateX(0) translateY(0) rotate(360deg); }
+}
+
+/* Geometric Shapes */
+.geometric-shape {
+    position: absolute;
+    background-color: var(--animation-color-1);
+    opacity: 0;
+    animation: float-geometric 20s infinite linear;
+}
+
+.shape-1 {
+    width: 80px;
+    height: 80px;
+    top: 10%;
+    left: 15%;
+    border-radius: 50%;
+    animation-delay: 0s;
+}
+
+.shape-2 {
+    width: 120px;
+    height: 120px;
+    top: 70%;
+    left: 80%;
+    border-radius: 10%;
+    animation-delay: 5s;
+}
+
+.shape-3 {
+    width: 50px;
+    height: 50px;
+    top: 40%;
+    left: 50%;
+    animation-delay: 10s;
+    transform: rotate(45deg);
+}
+
+@keyframes float-geometric {
+    0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+    25% { opacity: var(--animation-opacity, 0.1); }
+    50% { transform: translateY(-100px) rotate(180deg); }
+    75% { opacity: var(--animation-opacity, 0.1); }
+    100% { transform: translateY(0) rotate(360deg); opacity: 0; }
+}
+
+/* Shifting Gradient */
+.shifting-gradient-container {
+    background: linear-gradient(-45deg, var(--animation-color-1), var(--animation-color-2), var(--animation-color-3), var(--animation-color-4));
+    background-size: 400% 400%;
+    animation: gradient-shift 15s ease infinite;
+    opacity: var(--animation-opacity, 0.3);
+}
+
+@keyframes gradient-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Particles */
+.particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: var(--animation-color-1);
+    border-radius: 50%;
+    opacity: var(--animation-opacity, 0.4);
+    animation: particle-float 20s infinite linear;
+}
+
+@keyframes particle-float {
+    0% { transform: translateY(100vh) translateX(0) scale(0); opacity: 0; }
+    10% { opacity: var(--animation-opacity, 0.4); }
+    90% { opacity: var(--animation-opacity, 0.4); }
+    100% { transform: translateY(-100px) translateX(100px) scale(1); opacity: 0; }
+}
+
+/* Pulse */
+.pulse-ring {
+    position: absolute;
+    border: 2px solid var(--animation-color-1);
+    border-radius: 50%;
+    opacity: 0;
+    animation: pulse-expand 4s ease-out infinite;
+}
+
+.pulse-ring-1 {
+    width: 200px;
+    height: 200px;
+    top: 30%;
+    left: 30%;
+    animation-delay: 0s;
+}
+
+.pulse-ring-2 {
+    width: 300px;
+    height: 300px;
+    top: 50%;
+    left: 50%;
+    animation-delay: -1.5s;
+}
+
+.pulse-ring-3 {
+    width: 150px;
+    height: 150px;
+    top: 70%;
+    left: 20%;
+    animation-delay: -3s;
+}
+
+@keyframes pulse-expand {
+    0% { transform: scale(0.5); opacity: 0.6; }
+    100% { transform: scale(2); opacity: 0; }
+}
+
+/* Mesh */
+.mesh-grid {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: linear-gradient(var(--animation-color-1) 1px, transparent 1px), linear-gradient(90deg, var(--animation-color-1) 1px, transparent 1px);
+    background-size: 50px 50px;
+    opacity: var(--animation-opacity, 0.1);
+    animation: mesh-shift 20s linear infinite;
+}
+
+@keyframes mesh-shift {
+    0% { background-position: 0 0; }
+    100% { background-position: 50px 50px; }
+}
+
+/* Static Preview Styles for Animation Cards */
+.anim-preview-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+/* Aurora Preview */
+.anim-preview-aurora {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.anim-preview-aurora::before,
+.anim-preview-aurora::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(40px);
+    opacity: 0.3;
+}
+
+.anim-preview-aurora::before {
+    width: 60px;
+    height: 60px;
+    top: 15%;
+    left: 15%;
+    background: var(--animation-color-1, #3b82f6);
+}
+
+.anim-preview-aurora::after {
+    width: 50px;
+    height: 50px;
+    top: 60%;
+    left: 70%;
+    background: var(--animation-color-2, #60a5fa);
+}
+
+/* Waves Preview */
+.anim-preview-waves {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.anim-preview-waves::before,
+.anim-preview-waves::after {
+    content: '';
+    position: absolute;
+    background: radial-gradient(circle at 50% 50%, var(--animation-color-1, #3b82f6), transparent 70%);
+    border-radius: 45%;
+    opacity: 0.15;
+}
+
+.anim-preview-waves::before {
+    width: 80px;
+    height: 80px;
+    top: 10%;
+    left: 10%;
+}
+
+.anim-preview-waves::after {
+    width: 70px;
+    height: 70px;
+    bottom: 10%;
+    right: 10%;
+}
+
+/* Geometric Preview */
+.anim-preview-geometric {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background: none;
+}
+
+.anim-preview-geometric::before,
+.anim-preview-geometric::after {
+    content: '';
+    position: absolute;
+    background-color: var(--animation-color-1, #3b82f6);
+    opacity: 0.2;
+}
+
+.anim-preview-geometric::before {
+    width: 20px;
+    height: 20px;
+    top: 20%;
+    left: 20%;
+    border-radius: 50%;
+}
+
+.anim-preview-geometric::after {
+    width: 25px;
+    height: 25px;
+    top: 60%;
+    left: 70%;
+    border-radius: 10%;
+}
+
+.anim-preview-geometric > div {
+    position: absolute;
+    width: 15px;
+    height: 15px;
+    top: 40%;
+    left: 50%;
+    background-color: var(--animation-color-1, #3b82f6);
+    opacity: 0.2;
+    transform: rotate(45deg);
+}
+
+/* Gradient Preview */
+.anim-preview-gradient {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(-45deg, var(--animation-color-1, #3b82f6), var(--animation-color-2, #60a5fa), var(--animation-color-3, #23a6d5), var(--animation-color-4, #23d5ab));
+    background-size: 200% 200%;
+    background-position: 0% 50%;
+    opacity: 0.4;
+}
+
+/* Particles Preview */
+.anim-preview-particles {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.anim-preview-particles::before,
+.anim-preview-particles::after {
+    content: '';
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    background: var(--animation-color-1, #3b82f6);
+    border-radius: 50%;
+    opacity: 0.4;
+}
+
+.anim-preview-particles::before {
+    top: 20%;
+    left: 20%;
+}
+
+.anim-preview-particles::after {
+    top: 60%;
+    left: 70%;
+}
+
+.anim-preview-particles > div {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: var(--animation-color-1, #3b82f6);
+    border-radius: 50%;
+    opacity: 0.4;
+}
+
+.anim-preview-particles > div:nth-child(1) {
+    top: 40%;
+    left: 50%;
+}
+
+.anim-preview-particles > div:nth-child(2) {
+    top: 70%;
+    left: 30%;
+}
+
+.anim-preview-particles > div:nth-child(3) {
+    top: 30%;
+    left: 80%;
+}
+
+/* Pulse Preview */
+.anim-preview-pulse {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.anim-preview-pulse::before,
+.anim-preview-pulse::after {
+    content: '';
+    position: absolute;
+    border: 2px solid var(--animation-color-1, #3b82f6);
+    border-radius: 50%;
+    opacity: 0.3;
+}
+
+.anim-preview-pulse::before {
+    width: 40px;
+    height: 40px;
+    top: 30%;
+    left: 30%;
+}
+
+.anim-preview-pulse::after {
+    width: 30px;
+    height: 30px;
+    top: 50%;
+    left: 50%;
+}
+
+.anim-preview-pulse > div {
+    position: absolute;
+    width: 25px;
+    height: 25px;
+    top: 70%;
+    left: 20%;
+    border: 2px solid var(--animation-color-1, #3b82f6);
+    border-radius: 50%;
+    opacity: 0.3;
+}
+
+/* Mesh Preview */
+.anim-preview-mesh {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: linear-gradient(var(--animation-color-1, #3b82f6) 1px, transparent 1px), linear-gradient(90deg, var(--animation-color-1, #3b82f6) 1px, transparent 1px);
+    background-size: 20px 20px;
+    background-position: 0 0;
+    opacity: 0.25;
+}
+
+/* Theme Variables */
+:root {
+    --color-primary: #3b82f6;
+    --color-primary-light: #60a5fa;
+}
+
+.theme-dark {
+    --admin-bg: #141414;
+    --admin-header-bg: rgba(31, 41, 55, 0.8);
+    --admin-sidebar-bg: #1f2937;
+    --admin-card-bg: #1f2937;
+    --admin-border: #374151;
+    --admin-text-primary: #f3f4f6;
+    --admin-text-secondary: #d1d5db;
+    --admin-text-muted: #9ca3af;
+    --admin-dropdown-bg: #1f2937;
+    --admin-dropdown-hover: #374151;
+    --admin-dropdown-selected: #374151;
+    --admin-toggle-bg: #4b5563;
+    --admin-toggle-checked: var(--color-primary);
+    --chat-bg: rgba(23, 23, 33, 0.8);
+    --chat-header-bg: rgba(30, 30, 42, 0.5);
+    --chat-footer-bg: rgba(30, 30, 42, 0.5);
+    --chat-input-bg: rgba(55, 55, 75, 0.7);
+    --chat-button-bg: rgba(55, 55, 75, 0.5);
+    --chat-border-color: rgba(255, 255, 255, 0.1);
+    --chat-text-primary: #f3f4f6;
+    --chat-text-secondary: #d1d5db;
+    --chat-text-muted: #9ca3af;
+    --chat-bubble-bot-bg: rgba(45, 45, 60, 0.9);
+    --chat-bubble-user-text: #ffffff;
+    --chat-header-text: #f3f4f6;
+    --animation-opacity: 0.5;
+    --animation-color-1: var(--color-primary);
+    --animation-color-2: var(--color-primary-light);
+    --animation-color-3: #23a6d5;
+    --animation-color-4: #23d5ab;
+}
+
+.theme-light {
+    --admin-bg: #f9fafb;
+    --admin-header-bg: rgba(255, 255, 255, 0.8);
+    --admin-sidebar-bg: #ffffff;
+    --admin-card-bg: #ffffff;
+    --admin-border: #e5e7eb;
+    --admin-text-primary: #000000;
+    --admin-text-secondary: #1f2937;
+    --admin-text-muted: #374151;
+    --admin-dropdown-bg: #ffffff;
+    --admin-dropdown-hover: #f3f4f6;
+    --admin-dropdown-selected: #e5e7eb;
+    --admin-toggle-bg: #d1d5db;
+    --admin-toggle-checked: var(--color-primary);
+    --chat-bg: #ffffff;
+    --chat-header-bg: var(--color-primary);
+    --chat-footer-bg: #f9fafb;
+    --chat-input-bg: #f3f4f6;
+    --chat-button-bg: #e5e7eb;
+    --chat-border-color: #e5e7eb;
+    --chat-text-primary: #111827;
+    --chat-text-secondary: #4b5563;
+    --chat-text-muted: #6b7280;
+    --chat-bubble-bot-bg: #f3f4f6;
+    --chat-bubble-user-text: #ffffff;
+    --chat-header-text: #ffffff;
+    --animation-opacity: 0.2;
+    --animation-color-1: var(--color-primary);
+    --animation-color-2: var(--color-primary-light);
+    --animation-color-3: #a0c4ff;
+    --animation-color-4: #bde0fe;
+}
+
+/* Global admin styling - applies to all admin pages */
+.theme-dark input[type="text"],
+.theme-dark input[type="url"],
+.theme-dark input[type="email"],
+.theme-dark input[type="date"],
+.theme-dark textarea,
+.theme-dark select {
+    background-color: var(--admin-sidebar-bg, #374151);
+    color: var(--admin-text-primary, #f3f4f6);
+    border-color: var(--admin-border, #374151);
+}
+
+.theme-light input[type="text"],
+.theme-light input[type="url"],
+.theme-light input[type="email"],
+.theme-light input[type="date"],
+.theme-light textarea,
+.theme-light select {
+    background-color: var(--admin-sidebar-bg, #f3f4f6);
+    color: var(--admin-text-primary, #000000);
+    border-color: var(--admin-border, #e5e7eb);
+}
+
+/* General admin page styling */
+.theme-dark h1,
+.theme-dark h2,
+.theme-dark h3,
+.theme-dark h4 {
+    color: var(--admin-text-primary, #f3f4f6);
+}
+
+.theme-light h1,
+.theme-light h2,
+.theme-light h3,
+.theme-light h4 {
+    color: var(--admin-text-primary, #000000);
+}
+
+/* Widget Styles */
+[data-flowbot-id] {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: visible !important;
+    z-index: 9999 !important;
+}
+
+.flowbot-widget-container * {
+    box-sizing: border-box;
+}
+

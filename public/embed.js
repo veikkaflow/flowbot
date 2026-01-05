@@ -69,42 +69,7 @@
         const style = document.createElement('style');
         style.id = 'flowbot-critical-styles';
         style.textContent = `
-            /* FlowBot Critical CSS Variables and Styles */
-            :root {
-                --color-primary: #10b981;
-                --color-primary-light: #34d399;
-            }
-            
-            .theme-dark {
-                --chat-bg: rgba(23, 23, 33, 1);
-                --chat-header-bg: rgba(30, 30, 42, 0.5);
-                --chat-footer-bg: rgba(30, 30, 42, 0.5);
-                --chat-input-bg: rgba(55, 55, 75, 0.7);
-                --chat-button-bg: rgba(55, 55, 75, 0.5);
-                --chat-border-color: rgba(255, 255, 255, 0.1);
-                --chat-text-primary: #f3f4f6;
-                --chat-text-secondary: #d1d5db;
-                --chat-text-muted: #9ca3af;
-                --chat-bubble-bot-bg: rgba(45, 45, 60, 0.9);
-                --chat-bubble-user-text: #ffffff;
-                --chat-header-text: #f3f4f6;
-            }
-            
-            .theme-light {
-                --chat-bg: #ffffff;
-                --chat-header-bg: var(--color-primary);
-                --chat-footer-bg: #f9fafb;
-                --chat-input-bg: #f3f4f6;
-                --chat-button-bg: #e5e7eb;
-                --chat-border-color: #e5e7eb;
-                --chat-text-primary: #111827;
-                --chat-text-secondary: #4b5563;
-                --chat-text-muted: #6b7280;
-                --chat-bubble-bot-bg: #f3f4f6;
-                --chat-bubble-user-text: #ffffff;
-                --chat-header-text: #ffffff;
-            }
-            
+            /* FlowBot Critical Widget Styles - Only essential styles before CSS loads */
             [data-flowbot-id] {
                 position: fixed !important;
                 top: 0 !important;
@@ -255,7 +220,7 @@
             function injectCriticalCSS() {
                 const style = document.createElement('style');
                 style.textContent = `
-                    /* Critical FlowBot Widget Styles */
+                    /* Critical FlowBot Widget Styles - Fallback if CSS file fails to load */
                     [data-flowbot-id] {
                         position: fixed;
                         top: 0;
