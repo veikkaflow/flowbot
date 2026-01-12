@@ -510,7 +510,8 @@ async function selectRelevantKnowledgeSources(
 // Rakentaa keskustelun sisällön käyttäen knowledge base -tietoja
 async function buildChatContents(
   conversation: Conversation,
-  settings: AppSettings
+  settings: AppSettings,
+  maxMessagesOverride?: number
 ): Promise<Array<{ role: "user" | "model"; parts: Array<{ text: string } | { functionCall?: any } | { functionResponse?: any }> }>> {
   const contents: Array<{ role: "user" | "model"; parts: Array<any> }> = [];
 
@@ -525,7 +526,7 @@ async function buildChatContents(
   const messages = conversation.messages;
   
   // Rajoita viestit viimeisiin N viestiin (uusimmat viestit)
-  const maxMessages = config.optimization.maxMessagesInHistory;
+  const maxMessages = maxMessagesOverride !== undefined ? maxMessagesOverride : config.optimization.maxMessagesInHistory;
   const recentMessages = messages.length > maxMessages 
     ? messages.slice(-maxMessages)
     : messages;
@@ -573,15 +574,35 @@ async function buildChatContents(
               let formattedContent = `--- KNOWLEDGE_SOURCE: ${kb.name} ---\n\n`;
               formattedContent += `--- TEXT_CONTENT ---\n${truncatedContent}\n`;
 
+              // Rajoita additionalData kokoa
               if (kb.additionalData && Object.keys(kb.additionalData).length > 0) {
-                formattedContent += `\n--- ADDITIONAL_DATA (JSON) ---\n`;
+                const maxAdditionalDataChars = 1000; // Rajoita additionalData kokoon
+                let additionalDataStr = '';
                 Object.entries(kb.additionalData).forEach(([key, value]) => {
+                  if (additionalDataStr.length >= maxAdditionalDataChars) {
+                    return; // Lopeta jos raja ylittyy
+                  }
+                  
                   if (Array.isArray(value) && value.length > 0) {
-                    formattedContent += `${key.toUpperCase()}:\n${JSON.stringify(value, null, 2)}\n\n`;
+                    const jsonStr = JSON.stringify(value, null, 2);
+                    if (additionalDataStr.length + jsonStr.length < maxAdditionalDataChars) {
+                      additionalDataStr += `${key.toUpperCase()}:\n${jsonStr}\n\n`;
+                    }
                   } else if (typeof value === "object" && value !== null) {
-                    formattedContent += `${key.toUpperCase()}:\n${JSON.stringify(value, null, 2)}\n\n`;
+                    const jsonStr = JSON.stringify(value, null, 2);
+                    if (additionalDataStr.length + jsonStr.length < maxAdditionalDataChars) {
+                      additionalDataStr += `${key.toUpperCase()}:\n${jsonStr}\n\n`;
+                    }
                   }
                 });
+                
+                if (additionalDataStr) {
+                  // Truncate jos yhä liian pitkä
+                  if (additionalDataStr.length > maxAdditionalDataChars) {
+                    additionalDataStr = additionalDataStr.substring(0, maxAdditionalDataChars) + "...";
+                  }
+                  formattedContent += `\n--- ADDITIONAL_DATA (JSON) ---\n${additionalDataStr}`;
+                }
               }
 
               return formattedContent;
@@ -661,13 +682,28 @@ function buildSystemInstruction(settings: AppSettings): string {
   });
   instruction += `\n`;
 
-  instruction += `${settings.personality.customInstruction}\n\n`;
+  // Truncate custom instruction
+  const maxCustomInstructionChars = config.optimization.maxCharactersInCustomInstruction;
+  const customInstruction = settings.personality.customInstruction || '';
+  const truncatedCustomInstruction = customInstruction.length > maxCustomInstructionChars
+    ? customInstruction.substring(0, maxCustomInstructionChars) + "..."
+    : customInstruction;
+  instruction += `${truncatedCustomInstruction}\n\n`;
 
+  // Rajoita Q&A-dataa
   const qnaData = settings.qnaData || [];
   if (qnaData.length > 0) {
     instruction += config.systemInstructions.qna.header;
-    qnaData.forEach((data) => {
-      instruction += config.systemInstructions.qna.format(data.name, data.content);
+    const maxQnAPairs = config.optimization.maxQnAPairs;
+    const maxQnAAnswerChars = config.optimization.maxCharactersPerQnAAnswer;
+    const limitedQnA = qnaData.slice(0, maxQnAPairs);
+    
+    limitedQnA.forEach((data) => {
+      // Truncate Q&A answer jos se on liian pitkä
+      const truncatedAnswer = data.content.length > maxQnAAnswerChars
+        ? data.content.substring(0, maxQnAAnswerChars) + "..."
+        : data.content;
+      instruction += config.systemInstructions.qna.format(data.name, truncatedAnswer);
     });
   }
 
@@ -721,6 +757,35 @@ export const geminiChatStream = functions.https.onCall(
           if (functionCall.name === "getProducts") {
             const args = functionCall.args as { category?: string; searchTerm?: string };
             functionResult = await getProductsFromApi(args.category, args.searchTerm);
+            
+            // Truncate function response jos se on liian suuri
+            const maxResponseChars = config.optimization.maxCharactersInFunctionResponse;
+            if (functionResult && typeof functionResult === 'object') {
+              const resultStr = JSON.stringify(functionResult);
+              if (resultStr.length > maxResponseChars) {
+                // Rajoita tuotteiden määrää jos se on array
+                if (Array.isArray(functionResult) && functionResult.length > 10) {
+                  functionResult = functionResult.slice(0, 10);
+                }
+                // Tarkista uudelleen koko
+                const truncatedStr = JSON.stringify(functionResult);
+                if (truncatedStr.length > maxResponseChars) {
+                  // Jos yhä liian suuri, rajoita vielä enemmän
+                  if (Array.isArray(functionResult) && functionResult.length > 5) {
+                    functionResult = functionResult.slice(0, 5);
+                  }
+                  // Viimeinen turvamekanismi: truncate JSON string
+                  const finalStr = JSON.stringify(functionResult);
+                  if (finalStr.length > maxResponseChars) {
+                    functionResult = { 
+                      error: 'Response too large, truncated',
+                      items: Array.isArray(functionResult) ? functionResult.slice(0, 3) : []
+                    };
+                  }
+                }
+              }
+            }
+            
             functionResponses.push({
               name: "getProducts",
               response: { result: functionResult },
@@ -766,6 +831,32 @@ export const geminiChatStream = functions.https.onCall(
           } else if (functionCall.name === "searchKnowledgeBase") {
             const args = functionCall.args as { query: string; maxResults?: number };
             functionResult = await searchKnowledgeBase(settings, args.query, args.maxResults);
+            
+            // Truncate function response jos se on liian suuri
+            const maxResponseChars = config.optimization.maxCharactersInFunctionResponse;
+            if (functionResult && typeof functionResult === 'object') {
+              const resultStr = JSON.stringify(functionResult);
+              if (resultStr.length > maxResponseChars) {
+                // Rajoita tuloksia jos se on array
+                if (functionResult.results && Array.isArray(functionResult.results) && functionResult.results.length > 5) {
+                  functionResult.results = functionResult.results.slice(0, 5);
+                }
+                // Tarkista uudelleen koko
+                const truncatedStr = JSON.stringify(functionResult);
+                if (truncatedStr.length > maxResponseChars) {
+                  // Truncate jokaisen tuloksen content
+                  if (functionResult.results && Array.isArray(functionResult.results)) {
+                    functionResult.results = functionResult.results.map((r: any) => {
+                      if (r.content && r.content.length > 500) {
+                        r.content = r.content.substring(0, 500) + "...";
+                      }
+                      return r;
+                    });
+                  }
+                }
+              }
+            }
+            
             functionResponses.push({
               name: "searchKnowledgeBase",
               response: functionResult,
@@ -854,12 +945,33 @@ export const geminiConversationSummary = functions.https.onCall(
       const { conversation } = data;
       const ai = getAiClient();
 
+      // Käytä kaikkia viestejä (koko chatin konteksti)
+      // Varmista että viestit eivät sisällä undefined/null arvoja
       const conversationText = conversation.messages
-        .filter((m) => m.sender !== "system")
-        .map((m) => `${m.sender}: ${m.text}`)
+        .filter((m) => {
+          // Poista system-viestit ja viestit ilman tekstiä
+          return m.sender !== "system" && m.text && typeof m.text === 'string' && m.text.trim().length > 0;
+        })
+        .map((m) => {
+          // Varmista että sender ja text ovat olemassa
+          const sender = m.sender || 'unknown';
+          const text = (m.text || '').trim();
+          return `${sender}: ${text}`;
+        })
         .join("\n");
 
-      const prompt = config.analysis.conversationSummary.prompt(conversationText);
+      console.log(`[SUMMARY] Conversation text length: ${conversationText.length} chars, messages: ${conversation.messages.length}`);
+
+      // Rajoita conversationText kokoa jos se on liian pitkä
+      // Mutta käytä mahdollisimman paljon dataa (max 30000 merkkiä)
+      const maxConversationTextLength = 30000;
+      const truncatedConversationText = conversationText.length > maxConversationTextLength
+        ? conversationText.substring(0, maxConversationTextLength) + "\n\n[... keskustelu jatkuu ...]"
+        : conversationText;
+
+      const prompt = config.analysis.conversationSummary.prompt(truncatedConversationText);
+
+      console.log(`[SUMMARY] Prompt length: ${prompt.length} chars`);
 
       const result = await ai.models.generateContent({
         model: "gemini-2.5-flash",
@@ -874,6 +986,17 @@ export const geminiConversationSummary = functions.https.onCall(
       return { summary: resultText.trim() };
     } catch (error: any) {
       console.error("Error generating conversation summary:", error);
+      console.error("Error details:", {
+        message: error.message,
+        code: error.code,
+        stack: error.stack,
+        conversationId: data.conversation?.id,
+        messageCount: data.conversation?.messages?.length,
+        conversationTextLength: data.conversation?.messages
+          ?.filter((m) => m.sender !== "system" && m.text)
+          .map((m) => `${m.sender}: ${m.text}`)
+          .join("\n").length || 0
+      });
       throw new functions.https.HttpsError(
         "internal",
         "Failed to generate summary",

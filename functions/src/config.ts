@@ -158,7 +158,7 @@ Palauta vastaus JSON-muodossa listana ID-numeroita, esim: ["0", "2"]`,
       prompt: (conversationText: string) => `Provide a concise, one-paragraph summary of the following customer service chat conversation. The summary should be in Finnish.
 
 Conversation:
-${conversationText.substring(0, 15000)}
+${conversationText}
 
 Summary:`,
     },
