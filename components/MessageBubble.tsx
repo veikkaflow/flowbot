@@ -95,16 +95,37 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, avatars, 
                         {senderName}
                     </p>
                 )}
-                <div className={`px-4 py-2.5 rounded-2xl ${bubbleColor} ${isAlignedRight ? 'rounded-br-lg' : 'rounded-bl-lg'}`}>
-                    <div className="prose prose-sm text-current break-words">
-                        {message.isStreaming && !message.text ? (
-                             <TypingIndicator />
-                        ) : (
-                            <Markdown>{message.text}</Markdown>
-                        )}
-                        {message.isStreaming && message.text && <span className="inline-block w-2 h-4 bg-current rounded-sm animate-pulse ml-1 align-bottom"></span>}
+                {/* Viestin teksti jos se on olemassa */}
+                {message.text && (
+                    <div className={`px-4 py-2.5 rounded-2xl ${bubbleColor} ${isAlignedRight ? 'rounded-br-lg' : 'rounded-bl-lg'}`}>
+                        <div className="prose prose-sm text-current break-words">
+                            {message.isStreaming && !message.text ? (
+                                 <TypingIndicator />
+                            ) : (
+                                <Markdown>{message.text}</Markdown>
+                            )}
+                            {message.isStreaming && message.text && <span className="inline-block w-2 h-4 bg-current rounded-sm animate-pulse ml-1 align-bottom"></span>}
+                        </div>
                     </div>
-                </div>
+                )}
+                {/* CTA-linkki jos se on olemassa */}
+                {message.ctaLink && (
+                    <div className={`mt-3 ${isAlignedRight ? 'text-right' : 'text-left'}`}>
+                        <a
+                            href={message.ctaLink.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-block px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:opacity-90 transition-opacity font-medium text-sm"
+                        >
+                            {message.ctaLink.text} →
+                        </a>
+                        {message.ctaLink.description && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                {message.ctaLink.description}
+                            </p>
+                        )}
+                    </div>
+                )}
                 <p className={`text-xs text-gray-500 mt-1 ${isAlignedRight ? 'text-right' : 'text-left'}`}>
                     {formatTime(message.timestamp, language)}
                 </p>

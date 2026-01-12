@@ -233,14 +233,18 @@ export const useConversations = () => {
     const updateMessageContent = useCallback(async (conversationId: string, messageId: string, newContent: string) => {
         if (isSimulationConversationId(conversationId)) {
              setSimulationConversations(prev => prev.map(c => {
-                 if (c.id === conversationId) {
-                     const updatedMessages = c.messages.map(msg => msg.id === messageId ? { ...msg, text: newContent } : msg);
-                     return { ...c, messages: updatedMessages };
-                 }
-                 return c;
-             }));
-             return;
-        } 
+                if (c.id === conversationId) {
+                    const updatedMessages = c.messages.map(msg => 
+                        msg.id === messageId 
+                            ? { ...msg, text: newContent } 
+                            : msg
+                    );
+                    return { ...c, messages: updatedMessages };
+                }
+                return c;
+            }));
+            return;
+        }
         
         try {
             const convRef = doc(db, 'conversations', conversationId).withConverter(conversationConverter);
@@ -248,7 +252,11 @@ export const useConversations = () => {
             
             if (convDoc.exists()) {
                 const latestMessages = convDoc.data().messages;
-                const updatedMessages = latestMessages.map(msg => msg.id === messageId ? { ...msg, text: newContent } : msg);
+                const updatedMessages = latestMessages.map(msg => 
+                    msg.id === messageId 
+                        ? { ...msg, text: newContent } 
+                        : msg
+                );
                 await updateDoc(convRef, { messages: updatedMessages });
             }
         } catch (e) {

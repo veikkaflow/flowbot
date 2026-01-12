@@ -129,6 +129,7 @@ const searchKnowledgeBaseTool: FunctionDeclaration = {
   },
 };
 
+
 // Mock products API (same as client-side)
 async function getProductsFromApi(category?: string, searchTerm?: string) {
   try {
@@ -349,11 +350,14 @@ async function searchKnowledgeBase(
     // Limit to requested number of results
     const limitedIds = selectedIds.slice(0, limit);
 
+    // Käytä optimointiasetuksia
+    const maxCharsPerSource = config.optimization.maxCharactersPerKnowledgeSource;
+    
     const results = settings.knowledgeBase
       .filter((kb, idx) => limitedIds.includes(idx.toString()))
       .map((kb) => {
-        const truncatedContent = kb.content.length > 2000
-          ? kb.content.substring(0, 2000) + "..."
+        const truncatedContent = kb.content.length > maxCharsPerSource
+          ? kb.content.substring(0, maxCharsPerSource) + "..."
           : kb.content;
 
         return {
@@ -436,10 +440,12 @@ async function selectRelevantKnowledgeSources(
   userQuestion: string,
   knowledgeBase: KnowledgeSource[]
 ): Promise<string[]> {
+  const maxSources = config.optimization.maxKnowledgeSourcesPerMessage;
+  
   try {
     const ai = getAiClient();
     
-    if (knowledgeBase.length <= 5) {
+    if (knowledgeBase.length <= maxSources) {
       console.log(`[RAG] Small knowledge base (${knowledgeBase.length} items), using all`);
       return knowledgeBase.map((_, idx) => idx.toString());
     }
@@ -454,7 +460,7 @@ async function selectRelevantKnowledgeSources(
     const knowledgeSourceMetadataStr = knowledgeSourceMetadata.map((kb) =>
       `[${kb.id}] ${kb.name} (${kb.type})\nEsikatselu: ${kb.preview}...`
     ).join("\n\n");
-    const selectionPrompt = config.rag.selectRelevantSources.prompt(userQuestion, knowledgeSourceMetadataStr);
+    const selectionPrompt = config.rag.selectRelevantSources.prompt(userQuestion, knowledgeSourceMetadataStr, maxSources);
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
@@ -478,7 +484,7 @@ async function selectRelevantKnowledgeSources(
     const responseText = response.text;
     if (!responseText) {
       console.error("Empty response from Gemini API");
-      return knowledgeBase.slice(0, 5).map((_, idx) => idx.toString());
+      return knowledgeBase.slice(0, maxSources).map((_, idx) => idx.toString());
     }
 
     const result = JSON.parse(responseText);
@@ -490,14 +496,14 @@ async function selectRelevantKnowledgeSources(
     });
     
     const finalIds = validIds.length > 0
-      ? validIds
-      : knowledgeBase.slice(0, 5).map((_, idx) => idx.toString());
+      ? validIds.slice(0, maxSources)
+      : knowledgeBase.slice(0, maxSources).map((_, idx) => idx.toString());
     
     console.log(`[RAG] Selected ${finalIds.length} relevant knowledge sources: ${finalIds.join(", ")}`);
     return finalIds;
   } catch (error) {
     console.error("Error selecting relevant knowledge sources:", error);
-    return knowledgeBase.slice(0, 5).map((_, idx) => idx.toString());
+    return knowledgeBase.slice(0, maxSources).map((_, idx) => idx.toString());
   }
 }
 
@@ -508,30 +514,39 @@ async function buildChatContents(
 ): Promise<Array<{ role: "user" | "model"; parts: Array<{ text: string } | { functionCall?: any } | { functionResponse?: any }> }>> {
   const contents: Array<{ role: "user" | "model"; parts: Array<any> }> = [];
 
-  // Lisätään skenaariot
-  settings.personality.scenarios.forEach((scenario) => {
+  // Lisätään skenaariot (rajoitettu määrä)
+  const maxScenarios = config.optimization.maxScenarios;
+  const limitedScenarios = settings.personality.scenarios.slice(0, maxScenarios);
+  limitedScenarios.forEach((scenario) => {
     contents.push({ role: "user", parts: [{ text: scenario.userMessage }] });
     contents.push({ role: "model", parts: [{ text: scenario.botResponse }] });
   });
 
   const messages = conversation.messages;
   
+  // Rajoita viestit viimeisiin N viestiin (uusimmat viestit)
+  const maxMessages = config.optimization.maxMessagesInHistory;
+  const recentMessages = messages.length > maxMessages 
+    ? messages.slice(-maxMessages)
+    : messages;
+  
+  // Etsi viimeinen käyttäjäviesti rajoitetusta listasta
   let lastUserMessageIndex = -1;
-  for (let i = messages.length - 1; i >= 0; i--) {
-    if (messages[i].sender === "user") {
+  for (let i = recentMessages.length - 1; i >= 0; i--) {
+    if (recentMessages[i].sender === "user") {
       lastUserMessageIndex = i;
       break;
     }
   }
 
-  for (let i = 0; i < messages.length; i++) {
-    const message = messages[i];
+  for (let i = 0; i < recentMessages.length; i++) {
+    const message = recentMessages[i];
 
     if (message.sender === "user") {
       let userText = message.text;
 
       if (settings.knowledgeBase && settings.knowledgeBase.length > 0 && i === lastUserMessageIndex) {
-        const conversationHistory = messages.slice(0, i);
+        const conversationHistory = recentMessages.slice(0, i);
         const needsKB = await needsKnowledgeBase(message.text, conversationHistory);
 
         if (needsKB) {
@@ -542,12 +557,17 @@ async function buildChatContents(
             settings.knowledgeBase
           );
 
+          // Rajoita valittujen knowledge sourciden määrää
+          const maxSources = config.optimization.maxKnowledgeSourcesPerMessage;
+          const limitedIds = selectedIds.slice(0, maxSources);
+          const maxCharsPerSource = config.optimization.maxCharactersPerKnowledgeSource;
+
           const relevantContent = settings.knowledgeBase
-            .filter((kb, idx) => selectedIds.includes(idx.toString()))
+            .filter((kb, idx) => limitedIds.includes(idx.toString()))
             .map((kb) => {
               const fullContent = kb.content;
-              const truncatedContent = fullContent.length > 5000
-                ? fullContent.substring(0, 5000) + "..."
+              const truncatedContent = fullContent.length > maxCharsPerSource
+                ? fullContent.substring(0, maxCharsPerSource) + "..."
                 : fullContent;
 
               let formattedContent = `--- KNOWLEDGE_SOURCE: ${kb.name} ---\n\n`;
@@ -802,7 +822,9 @@ export const geminiChatStream = functions.https.onCall(
         }
 
         console.log(`[FORM] Successfully returning final response to client`);
-        return { text: finalText };
+        return { 
+          text: finalText
+        };
       } else {
         // No function calls, return initial response
         const initialText = initialResponse.text;
@@ -1022,6 +1044,84 @@ export const geminiTranslateText = functions.https.onCall(
         "Failed to translate text",
         error.message
       );
+    }
+  }
+);
+
+// Create User Function
+// Vain admin/superadmin käyttäjät voivat luoda uusia käyttäjiä
+export const createUser = functions.https.onCall(
+  async (data: { email: string; password: string; role: 'superadmin' | 'admin' | 'agent' | 'viewer'; name?: string }, context) => {
+    // Tarkista että käyttäjä on autentikoitu
+    if (!context.auth) {
+      throw new functions.https.HttpsError('unauthenticated', 'User must be authenticated');
+    }
+
+    // Tarkista että kutsuva käyttäjä on admin tai superadmin
+    const callerDoc = await db.collection('users').doc(context.auth.uid).get();
+    if (!callerDoc.exists) {
+      throw new functions.https.HttpsError('permission-denied', 'Caller user not found in database');
+    }
+
+    const callerData = callerDoc.data();
+    const callerRole = callerData?.role;
+
+    if (callerRole !== 'admin' && callerRole !== 'superadmin') {
+      throw new functions.https.HttpsError('permission-denied', 'Only admins can create users');
+    }
+
+    // Tarkista että superadmin-roolia voi luoda vain superadmin
+    if (data.role === 'superadmin' && callerRole !== 'superadmin') {
+      throw new functions.https.HttpsError('permission-denied', 'Only superadmins can create superadmin users');
+    }
+
+    // Validoi salasana
+    if (!data.password || data.password.length < 6) {
+      throw new functions.https.HttpsError('invalid-argument', 'Password must be at least 6 characters long');
+    }
+
+    // Validoi sähköposti
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(data.email)) {
+      throw new functions.https.HttpsError('invalid-argument', 'Invalid email address');
+    }
+
+    try {
+      // Luo käyttäjä Firebase Authiin
+      const userRecord = await admin.auth().createUser({
+        email: data.email,
+        password: data.password,
+        displayName: data.name || data.email.split('@')[0],
+        emailVerified: false,
+      });
+
+      // Luo käyttäjädokumentti Firestoreen
+      await db.collection('users').doc(userRecord.uid).set({
+        email: data.email,
+        role: data.role,
+        name: data.name || data.email.split('@')[0],
+        allowedBotIds: [],
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      console.log(`[CREATE_USER] User created successfully: ${data.email} (${data.role}) by ${callerData?.email}`);
+
+      return {
+        success: true,
+        uid: userRecord.uid,
+        email: data.email,
+        role: data.role,
+        name: data.name || data.email.split('@')[0],
+      };
+    } catch (error: any) {
+      console.error('[CREATE_USER] Error creating user:', error);
+      
+      // Jos käyttäjä on jo olemassa, palauta selkeä virheilmoitus
+      if (error.code === 'auth/email-already-exists') {
+        throw new functions.https.HttpsError('already-exists', 'User with this email already exists');
+      }
+      
+      throw new functions.https.HttpsError('internal', error.message || 'Failed to create user');
     }
   }
 );

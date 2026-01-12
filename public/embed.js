@@ -20,7 +20,7 @@
     // Configuration
     const CONFIG = {
         baseUrl: baseUrl,
-        cssPath: '/assets/index.css', // Will be updated after build with hash
+        cssPath: '/embed.css', // Widget styles from embed.css
         // Embed bundle will be in assets folder with hash, we'll find it dynamically
         embedJsPath: '/assets/embed-bundle.js' // Will be updated to actual filename with hash
     };
@@ -135,7 +135,7 @@
     function loadCSS() {
         return new Promise((resolve, reject) => {
             // Try to find existing CSS link
-            const existingLink = document.querySelector('link[href*="index"]');
+            const existingLink = document.querySelector('link[href*="embed"]');
             if (existingLink) {
                 resolve();
                 return;
@@ -143,8 +143,8 @@
 
             // Try multiple CSS paths - Vite generates CSS with hash
             const cssPaths = [
-                '/assets/index.css',
-                '/assets/index-[hash].css',
+                '/embed.css',
+                '/assets/embed.css',
             ];
 
             // Try to find CSS file by checking if it exists
@@ -154,8 +154,8 @@
 
             function tryLoadCSS(pathIndex) {
                 if (pathIndex >= cssPaths.length) {
-                    // If all paths failed, try to find any CSS file in assets
-                    console.warn('FlowBot: Could not find CSS file, trying to inject inline styles');
+                    // If all paths failed, inject critical CSS as fallback
+                    console.warn('FlowBot: Could not find CSS file, using inline critical styles');
                     injectCriticalCSS();
                     resolve();
                     return;
@@ -176,44 +176,14 @@
                     if (attempts < maxAttempts) {
                         tryLoadCSS(pathIndex + 1);
                     } else {
-                        // Last attempt: try to find CSS dynamically
-                        findCSSDynamically().then(resolve).catch(() => {
-                            injectCriticalCSS();
-                            resolve();
-                        });
+                        // All paths failed, use fallback
+                        console.warn('FlowBot: CSS file not found, using inline critical styles');
+                        injectCriticalCSS();
+                        resolve();
                     }
                 };
                 
                 document.head.appendChild(cssLink);
-            }
-
-            // Try to find CSS file by fetching assets manifest or checking common patterns
-            function findCSSDynamically() {
-                return new Promise((resolve, reject) => {
-                    // Try common CSS filename patterns
-                    const patterns = [
-                        '/assets/index-*.css',
-                    ];
-                    
-                    // Since we can't glob, try fetching the main HTML to find CSS link
-                    fetch(CONFIG.baseUrl + '/index.html')
-                        .then(res => res.text())
-                        .then(html => {
-                            const match = html.match(/href=["']([^"']*index[^"']*\.css[^"']*)["']/);
-                            if (match) {
-                                const cssPath = match[1].startsWith('/') ? match[1] : '/' + match[1];
-                                const cssLink = document.createElement('link');
-                                cssLink.rel = 'stylesheet';
-                                cssLink.href = CONFIG.baseUrl + cssPath;
-                                cssLink.onload = () => resolve();
-                                cssLink.onerror = () => reject();
-                                document.head.appendChild(cssLink);
-                            } else {
-                                reject();
-                            }
-                        })
-                        .catch(() => reject());
-                });
             }
 
             // Inject critical CSS if file loading fails

@@ -27,6 +27,12 @@ export interface Message {
     timestamp: string;
     isStreaming?: boolean;
     agentId?: string; // Agent ID for agent messages, to identify which agent sent the message
+    ctaLink?: CTALink;
+}
+export interface CTALink {
+    text: string;
+    url: string;
+    description?: string;
 }
 
 export interface Submission {

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { collection, doc, getDoc, getDocs, setDoc, deleteDoc, query, where } from 'firebase/firestore';
-import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { db, auth } from '../services/firebase.ts';
+import { httpsCallable } from 'firebase/functions';
+import { db, functions } from '../services/firebase.ts';
 import { User } from '../types.ts';
 import { useUserContext } from '../context/UserContext.tsx';
 
@@ -89,56 +89,98 @@ export const useUserManagement = () => {
 
     const addUser = async (email: string, role: 'superadmin' | 'admin' | 'agent' | 'viewer', password?: string) => {
         const userRole = await getCurrentUserRole();
-        if (userRole !== 'admin') {
+        if (userRole !== 'admin' && userRole !== 'superadmin') {
             throw new Error('Vain admin-käyttäjät voivat lisätä käyttäjiä');
         }
 
-        try {
-            let uid: string;
-            
-            if (password) {
-                // Create user in Firebase Auth
-                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                uid = userCredential.user.uid;
-            } else {
-                // If no password provided, generate a temporary UID
-                // Note: User won't be able to login without password
-                uid = `temp_${Date.now()}`;
-            }
+        // Tarkista että superadmin-roolia voi luoda vain superadmin
+        if (role === 'superadmin' && userRole !== 'superadmin') {
+            throw new Error('Vain superadmin-käyttäjät voivat luoda superadmin-käyttäjiä');
+        }
 
-            // Create user document in Firestore
-            const newUser: User = {
-                uid,
+        // Salasana on pakollinen
+        if (!password || password.length < 6) {
+            throw new Error('Salasanan on oltava vähintään 6 merkkiä pitkä');
+        }
+
+        try {
+            // Käytä Firebase Functions createUser funktiota
+            const createUserFunction = httpsCallable<{
+                email: string;
+                password: string;
+                role: 'superadmin' | 'admin' | 'agent' | 'viewer';
+                name?: string;
+            }, {
+                success: boolean;
+                uid: string;
+                email: string;
+                role: string;
+                name: string;
+            }>(functions, 'createUser');
+
+            const result = await createUserFunction({
                 email,
+                password,
                 role,
                 name: email.split('@')[0],
+            });
+
+            if (!result.data.success) {
+                throw new Error('Käyttäjän luonti epäonnistui');
+            }
+
+            const newUser: User = {
+                uid: result.data.uid,
+                email: result.data.email,
+                role: result.data.role as User['role'],
+                name: result.data.name,
+                allowedBotIds: [],
             };
 
-            await setDoc(doc(db, 'users', uid), {
-                email,
-                role,
-                name: newUser.name,
-                allowedBotIds: [],
+            // Optimistisesti lisää uusi käyttäjä listaan heti
+            setUsers(prevUsers => {
+                // Tarkista ettei käyttäjä ole jo listassa
+                if (prevUsers.find(u => u.uid === newUser.uid)) {
+                    return prevUsers;
+                }
+                return [...prevUsers, newUser];
             });
 
-            // Refresh users list
-            const usersSnapshot = await getDocs(collection(db, 'users'));
-            const usersList: User[] = [];
-            usersSnapshot.forEach((docSnap) => {
-                const data = docSnap.data();
-                usersList.push({
-                    uid: docSnap.id,
-                    email: data.email || '',
-                    role: data.role || 'agent',
-                    name: data.name || data.email?.split('@')[0] || '',
-                    allowedBotIds: data.allowedBotIds || [],
+            // Päivitä lista Firestoresta varmistaaksemme että kaikki on synkassa
+            try {
+                const usersSnapshot = await getDocs(collection(db, 'users'));
+                const usersList: User[] = [];
+                usersSnapshot.forEach((docSnap) => {
+                    const data = docSnap.data();
+                    usersList.push({
+                        uid: docSnap.id,
+                        email: data.email || '',
+                        role: data.role || 'agent',
+                        name: data.name || data.email?.split('@')[0] || '',
+                        allowedBotIds: data.allowedBotIds || [],
+                    });
                 });
-            });
-            setUsers(usersList);
+                setUsers(usersList);
+            } catch (refreshError) {
+                console.error('Error refreshing users list:', refreshError);
+                // Jos päivitys epäonnistuu, lista on jo päivitetty optimistisesti
+            }
 
             return newUser;
         } catch (error: any) {
             console.error('Error adding user:', error);
+            
+            // Muunna Firebase Functions virheet selkeämmiksi viesteiksi
+            if (error.code === 'permission-denied') {
+                throw new Error('Sinulla ei ole oikeuksia luoda käyttäjiä');
+            } else if (error.code === 'already-exists') {
+                throw new Error('Käyttäjä tällä sähköpostilla on jo olemassa');
+            } else if (error.code === 'invalid-argument') {
+                throw new Error(error.message || 'Virheelliset tiedot');
+            } else if (error.message) {
+                throw new Error(error.message);
+            }
+            
             throw error;
         }
     };

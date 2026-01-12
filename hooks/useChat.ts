@@ -98,11 +98,15 @@ export const useChat = (visitorId: string, conversation: Conversation | null) =>
         try {
             const stream = getChatResponseStream(conversationForGemini, activeBot.settings);
             let fullResponse = '';
+            
             for await (const chunk of stream) {
-                fullResponse += chunk;
-                setMessages(prev => prev.map(msg => 
-                    msg.id === botPlaceholder.id ? { ...msg, text: fullResponse } : msg
-                ));
+                // Normaali tekstichunk
+                if (typeof chunk === 'string') {
+                    fullResponse += chunk;
+                    setMessages(prev => prev.map(msg => 
+                        msg.id === botPlaceholder.id ? { ...msg, text: fullResponse } : msg
+                    ));
+                }
             }
 
             // Finalize the message in the local state immediately to remove the indicator.

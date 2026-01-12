@@ -317,37 +317,44 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ visitorId }) => {
                         <BackgroundAnimation animation={appearance.backgroundAnimation} />
                         
                         <div className="relative z-10 flex flex-col flex-1 h-full">
-                            <header className="flex-shrink-0 p-4 flex items-center justify-between text-[var(--chat-header-text)]" style={{ backgroundColor: 'var(--header-bg)' }}>
-                                <div className="flex items-center gap-3">
+                            <header className="flex-shrink-0 p-2 flex items-center justify-between text-[var(--chat-header-text)]" style={{ backgroundColor: 'var(--header-bg)' }}>
+                                <div className="flex items-center gap-2">
                                     <img 
                                         src={activeBot.settings.avatarSettings.selectedBotAvatar} 
                                         alt="bot" 
-                                        className="w-10 h-10 rounded-full flex-shrink-0" 
-                                        style={{ width: '40px', height: '40px', objectFit: 'cover' }}
+                                        className="w-8 h-8 rounded-full flex-shrink-0" 
+                                        style={{ width: '32px', height: '32px', objectFit: 'cover' }}
                                     />
                                     <div>
-                                        <h3 className="font-bold">{appearance.brandName}</h3>
+                                        <h3 className="font-bold text-sm">{appearance.brandName}</h3>
                                         <p className="text-xs opacity-80">{isOnline ? tBot('chat.online') : tBot('chat.offline')}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <button onClick={toggleChatSize} title="Vaihda kokoa" className="p-1.5 text-current/80 hover:text-current"><ChevronsUpDown className="w-5 h-5"/></button>
+                                    <button onClick={toggleChatSize} title="Vaihda kokoa" className="p-1 text-current/80 hover:text-current"><ChevronsUpDown className="w-4 h-4"/></button>
                                     <div className="relative" ref={settingsMenuRef}>
                                         <button 
                                             onClick={() => setShowSettingsMenu(!showSettingsMenu)} 
                                             title="Asetukset" 
-                                            className={`p-1.5 rounded-md transition-all ${showSettingsMenu ? 'bg-[var(--chat-input-bg)] text-current' : 'text-current/80 hover:text-current'}`}
+                                            className={`p-1 rounded-md transition-all ${showSettingsMenu ? 'bg-[var(--chat-input-bg)] text-current' : 'text-current/80 hover:text-current'}`}
                                         >
-                                            <Cog className="w-5 h-5"/>
+                                            <Cog className="w-4 h-4"/>
                                         </button>
                                         {showSettingsMenu && (
-                                            <div className="absolute right-0 mt-2 w-48 bg-[var(--chat-bg)] border border-[var(--chat-border-color)] rounded-lg shadow-lg z-50 overflow-hidden">
+                                            <div 
+                                                className="absolute right-0 mt-2 w-48 border border-[var(--chat-border-color)] rounded-lg shadow-lg z-[100] overflow-hidden backdrop-blur-sm" 
+                                                style={{ 
+                                                    backgroundColor: appearance.themeMode === 'dark' 
+                                                        ? 'rgba(55, 55, 75, 1)' 
+                                                        : '#f3f4f6'
+                                                }}
+                                            >
                                                 <button
                                                     onClick={() => {
                                                         setShowSettingsMenu(false);
                                                         confirmAndStartNewConversation();
                                                     }}
-                                                    className="w-full text-left px-4 py-2 text-sm text-[var(--chat-text-primary)] hover:bg-[var(--chat-input-bg)] flex items-center gap-2"
+                                                    className="w-full text-left px-4 py-2 text-sm text-[var(--chat-text-primary)] hover:bg-[var(--chat-button-bg)] flex items-center gap-2"
                                                 >
                                                     <RefreshCcw className="w-4 h-4" />
                                                     {tBot('chat.start_new')}
@@ -357,7 +364,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ visitorId }) => {
                                                         setShowSettingsMenu(false);
                                                         setActiveView('help');
                                                     }}
-                                                    className="w-full text-left px-4 py-2 text-sm text-[var(--chat-text-primary)] hover:bg-[var(--chat-input-bg)] flex items-center gap-2"
+                                                    className="w-full text-left px-4 py-2 text-sm text-[var(--chat-text-primary)] hover:bg-[var(--chat-button-bg)] flex items-center gap-2"
                                                 >
                                                     <HelpCircle className="w-4 h-4" />
                                                     Ohjeet
@@ -367,7 +374,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ visitorId }) => {
                                                         setShowSettingsMenu(false);
                                                         setActiveView('editName');
                                                     }}
-                                                    className="w-full text-left px-4 py-2 text-sm text-[var(--chat-text-primary)] hover:bg-[var(--chat-input-bg)] flex items-center gap-2"
+                                                    className="w-full text-left px-4 py-2 text-sm text-[var(--chat-text-primary)] hover:bg-[var(--chat-button-bg)] flex items-center gap-2"
                                                 >
                                                     <User className="w-4 h-4" />
                                                     Vaihda nimi
@@ -378,10 +385,10 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ visitorId }) => {
                                     <button 
                                         onClick={() => setIsOpen(false)} 
                                         title="Pienennä" 
-                                        className="p-1.5 text-[var(--chat-header-text)]/80 hover:text-[var(--chat-header-text)] transition-colors"
+                                        className="p-1 text-[var(--chat-header-text)]/80 hover:text-[var(--chat-header-text)] transition-colors"
                                         style={{ color: 'inherit', zIndex: 10 }}
                                     >
-                                        <ArrowDown className="w-5 h-5"/>
+                                        <ArrowDown className="w-4 h-4"/>
                                     </button>
                                 </div>
                             </header>

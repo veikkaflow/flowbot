@@ -1,4 +1,4 @@
-import './index.css';
+import './embed.css';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import PublicWidgetLoader from './components/PublicWidgetLoader.tsx';

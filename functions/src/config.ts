@@ -135,15 +135,15 @@ Palauta vastaus JSON-muodossa: { "needsKnowledgeBase": true/false, "reason": "ly
       },
     },
     selectRelevantSources: {
-      prompt: (userQuestion: string, knowledgeSourceMetadata: string) => `Käyttäjä kysyy: "${userQuestion}"
+      prompt: (userQuestion: string, knowledgeSourceMetadata: string, maxSources: number) => `Käyttäjä kysyy: "${userQuestion}"
 
 Seuraavat knowledge source -tiedostot ovat saatavilla:
 ${knowledgeSourceMetadata}
 
-Valitse 3-5 tiedostoa, jotka ovat todennäköisimmin relevantteja vastataksesi kysymykseen.
-Palauta vastaus JSON-muodossa listana ID-numeroita, esim: ["0", "2", "5"]`,
+Valitse ${maxSources} tiedostoa, jotka ovat todennäköisimmin relevantteja vastataksesi kysymykseen.
+Palauta vastaus JSON-muodossa listana ID-numeroita, esim: ["0", "2"]`,
       responseSchema: {
-        selectedIds: "Lista valittujen tiedostojen ID-numeroista (3-5 kpl)",
+        selectedIds: "Lista valittujen tiedostojen ID-numeroista (määrä määritellään optimointiasetuksissa)",
       },
     },
     knowledgeBasePrefix: {
@@ -202,6 +202,119 @@ Return the result as a single JSON object.`,
       { id: "TV002", name: 'LG 65" QNED MiniLED TV', price: "1899€", stock: 8, description: "Kirkas kuva ja erinomainen kontrasti." },
       { id: "TV003", name: 'Sony 50" Bravia Full HD', price: "799€", stock: 22, description: "Luotettava perustelevisio hyvällä kuvalla." },
     ],
+  },
+
+  // ============================================
+  // OPTIMOINTIASETUKSET - Viestien koon hallinta
+  // ============================================
+  // 
+  // Tämä osio sisältää kaikki asetukset, jotka vaikuttavat siihen kuinka paljon dataa
+  // lähetetään Gemini API:lle. Nämä asetukset auttavat välttämään "overloaded" -virheitä
+  // ja parantamaan suorituskykyä.
+  //
+  optimization: {
+    // ============================================
+    // KESKUSTELUHISTORIAN RAJOITUKSET
+    // ============================================
+    
+    // Maksimimäärä viestejä, jotka lähetetään Gemini API:lle keskusteluhistoriassa.
+    // Viestit otetaan aina keskustelun lopusta (uusimmat viestit).
+    // 
+    // Suurempi arvo = enemmän kontekstia, mutta myös suurempi viestin koko.
+    // Pienempi arvo = pienempi viestin koko, mutta vähemmän kontekstia.
+    //
+    // Suositus: 10-30 viestiä. 10 viestiä on hyvä tasapaino suorituskyvyn ja kontekstin välillä.
+    maxMessagesInHistory: 10,
+
+    // ============================================
+    // KNOWLEDGE BASE -RAJOITUKSET
+    // ============================================
+    
+    // Maksimimäärä knowledge source -tiedostoja, jotka valitaan ja lähetetään Gemini API:lle
+    // yhden käyttäjäviestin yhteydessä.
+    //
+    // Kun käyttäjä kysyy jotain, järjestelmä valitsee tämän verran relevantteja tiedostoja
+    // knowledge basesta. Jokainen tiedosto voi sisältää paljon tekstiä, joten pienempi määrä
+    // pienentää merkittävästi viestin kokoa.
+    //
+    // Suositus: 2-5 tiedostoa. 2 tiedostoa on hyvä tasapaino relevanssin ja koon välillä.
+    maxKnowledgeSourcesPerMessage: 2,
+
+    // Maksimimäärä merkkejä, jotka otetaan jokaisesta knowledge source -tiedostosta.
+    // Jos tiedosto on pidempi, se katkaistaan tähän pituuteen ja lisätään "..." loppuun.
+    //
+    // Tämä rajoittaa kuinka paljon tekstiä jokainen knowledge source voi sisältää viestissä.
+    // Pienempi arvo = pienempi viestin koko, mutta vähemmän tietoa.
+    //
+    // Suositus: 2000-5000 merkkiä. 2000 merkkiä on hyvä tasapaino.
+    maxCharactersPerKnowledgeSource: 2000,
+
+    // ============================================
+    // SKENAARIOIDEN RAJOITUKSET
+    // ============================================
+    
+    // Maksimimäärä skenaarioita, jotka lisätään keskusteluhistoriaan.
+    // Skenaariot ovat esimerkkikeskusteluja, jotka opettavat botille miten vastata.
+    //
+    // Jokainen skenaario lisää 2 viestiä keskusteluhistoriaan (käyttäjän viesti + botin vastaus).
+    // Jos skenaarioita on paljon, ne voivat kasvattaa viestin kokoa merkittävästi.
+    //
+    // Suositus: 3-10 skenaariota. 5 skenaariota on hyvä tasapaino.
+    maxScenarios: 5,
+
+    // ============================================
+    // Q&A-DATAN RAJOITUKSET
+    // ============================================
+    
+    // Maksimimäärä Q&A-pareja, jotka lisätään system instructioniin.
+    // Q&A-parit ovat kysymyksiä ja vastauksia, jotka botin pitäisi osata.
+    //
+    // Jokainen Q&A-pari lisää tekstiä system instructioniin. Jos Q&A-pareja on paljon,
+    // system instruction voi kasvaa liian suureksi.
+    //
+    // Suositus: 10-30 paria. 20 paria on hyvä tasapaino.
+    maxQnAPairs: 20,
+
+    // Maksimimäärä merkkejä jokaisessa Q&A-vastauksessa.
+    // Jos vastaus on pidempi, se katkaistaan tähän pituuteen.
+    //
+    // Suositus: 300-1000 merkkiä. 500 merkkiä on hyvä tasapaino.
+    maxCharactersPerQnAAnswer: 500,
+
+    // ============================================
+    // CUSTOM INSTRUCTION -RAJOITUKSET
+    // ============================================
+    
+    // Maksimimäärä merkkejä custom instructionissa.
+    // Custom instruction on käyttäjän määrittelemä ohjeistus botin käyttäytymiselle.
+    //
+    // Jos custom instruction on pidempi kuin tämä arvo, se katkaistaan.
+    //
+    // Suositus: 1000-3000 merkkiä. 2000 merkkiä on hyvä tasapaino.
+    maxCharactersInCustomInstruction: 2000,
+
+    // ============================================
+    // FUNCTION RESPONSE -RAJOITUKSET
+    // ============================================
+    
+    // Maksimimäärä merkkejä function responsessa.
+    // Kun Gemini kutsuu työkaluja (esim. getProducts), työkalujen vastaukset lähetetään
+    // takaisin Gemini API:lle. Jos vastaus on liian suuri, se voi aiheuttaa ongelmia.
+    //
+    // Suositus: 3000-10000 merkkiä. 5000 merkkiä on hyvä tasapaino.
+    maxCharactersInFunctionResponse: 5000,
+
+    // ============================================
+    // KOKONAISKOON RAJOITUKSET
+    // ============================================
+    
+    // Maksimimäärä merkkejä koko contents-arrayn JSON-muodossa.
+    // Jos sisältö ylittää tämän rajan, järjestelmä yrittää truncata sitä aggressiivisemmin.
+    //
+    // Tämä on viimeinen turvamekanismi, jos muut rajoitukset eivät riitä.
+    //
+    // Suositus: 80000-150000 merkkiä (~80-150KB). 100000 merkkiä on hyvä turvaraja.
+    maxTotalContentSize: 100000,
   },
 };
 
