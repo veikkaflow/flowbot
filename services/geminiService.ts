@@ -3,13 +3,13 @@
 
 import { httpsCallable } from 'firebase/functions';
 import { functions } from './firebase.ts';
-import { AppSettings, Conversation, KnowledgeSource, AnalysisResult, Message } from '../types.ts';
+import { AppSettings, Conversation, KnowledgeSource, AnalysisResult, Message, RichContent } from '../types.ts';
 
 // Firebase Functions callables
 const geminiChatStreamCallable = httpsCallable<{
   conversation: Conversation;
   settings: AppSettings;
-}, { text: string }>(functions, 'geminiChatStream');
+}, { text: string; richContent?: RichContent[] }>(functions, 'geminiChatStream');
 
 const geminiConversationSummaryCallable = httpsCallable<{
   conversation: Conversation;
@@ -32,7 +32,7 @@ const geminiTranslateTextCallable = httpsCallable<{
 export async function* getChatResponseStream(
     conversation: Conversation,
     settings: AppSettings
-): AsyncGenerator<string> {
+): AsyncGenerator<string | { text: string; richContent?: RichContent[] }> {
     try {
         // Kutsu Firebase Functions -endpointtia
         const result = await geminiChatStreamCallable({
@@ -43,6 +43,7 @@ export async function* getChatResponseStream(
         // Simuloi streaming-efektiä jakamalla vastaus sanoihin
         // HUOM: Tämä on yksinkertaistettu versio. Oikea streaming vaatii HTTP-endpointin
         const text = result.data.text;
+        const richContent = result.data.richContent;
         const words = text.split(' ');
         
         for (let i = 0; i < words.length; i++) {
@@ -51,6 +52,11 @@ export async function* getChatResponseStream(
             if (i % 5 === 0) {
                 await new Promise(resolve => setTimeout(resolve, 10));
             }
+        }
+        
+        // Yield rich content at the end if available
+        if (richContent && richContent.length > 0) {
+            yield { text, richContent };
         }
     } catch (error: any) {
         console.error("Gemini API error in getChatResponseStream:", error);

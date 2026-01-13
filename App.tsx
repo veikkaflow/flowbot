@@ -13,6 +13,7 @@ import { useBotContext } from './context/BotContext.tsx';
 import BotSelectorScreen from './components/BotSelectorScreen.tsx';
 import SetupWizard from './components/SetupWizard.tsx';
 import PublicWidgetLoader from './components/PublicWidgetLoader.tsx';
+import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 import { auth, db } from './services/firebase.ts';
 import { signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
@@ -112,20 +113,22 @@ const App: React.FC = () => {
 
     // Default Admin Application
     return (
-        <ThemeProvider>
-            <LanguageProvider>
-                <UserProvider>
-                    <BotProvider>
-                        <ConversationProvider>
-                            <NotificationProvider>
-                                <AdminAppContent />
-                                <NotificationHost />
-                            </NotificationProvider>
-                        </ConversationProvider>
-                    </BotProvider>
-                </UserProvider>
-            </LanguageProvider>
-        </ThemeProvider>
+        <ErrorBoundary>
+            <ThemeProvider>
+                <LanguageProvider>
+                    <UserProvider>
+                        <BotProvider>
+                            <ConversationProvider>
+                                <NotificationProvider>
+                                    <AdminAppContent />
+                                    <NotificationHost />
+                                </NotificationProvider>
+                            </ConversationProvider>
+                        </BotProvider>
+                    </UserProvider>
+                </LanguageProvider>
+            </ThemeProvider>
+        </ErrorBoundary>
     );
 };
 

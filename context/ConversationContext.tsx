@@ -8,7 +8,7 @@ interface ConversationContextType {
   activeConversation: Conversation | null;
   setActiveConversationId: (id: string | null) => void;
   addMessage: (visitorId: string, message: Message) => Promise<string | null>;
-  updateMessageContent: (conversationId: string, messageId: string, newContent: string) => void;
+  updateMessageContent: (conversationId: string, messageId: string, newContent: string, richContent?: any[]) => void;
   endStream: (conversationId: string, messageId: string) => void;
   getOrCreateConversation: (visitorId: string) => Promise<Conversation>;
   updateVisitorName: (visitorId: string, name: string) => void;
