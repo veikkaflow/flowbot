@@ -42,3 +42,4 @@ export const QuickReplies: React.FC<QuickRepliesProps> = ({ quickReplies, langua
   );
 };
 
+

@@ -126,4 +126,3 @@ export interface FunctionContext {
     maxResponseChars: number;
     settings: AppSettings;
 }
-

@@ -16,3 +16,4 @@ export async function getProductsFromApi(category?: string, searchTerm?: string)
   }
 }
 
+

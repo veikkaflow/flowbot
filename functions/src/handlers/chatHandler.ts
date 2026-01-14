@@ -3,7 +3,8 @@ import { Conversation, AppSettings, RichContent } from "../types";
 import { getAiClient, buildChatContents, buildSystemInstruction } from "../services/geminiService";
 import { needsKnowledgeBase, selectRelevantKnowledgeSources } from "../services/knowledgeService";
 import { getProductsTool, submitContactFormTool, submitQuoteFormTool, searchKnowledgeBaseTool, addRichContentTool } from "../tools/functionTools";
-import { functionHandlers, FunctionContext } from "../tools/functionHandlers";
+import { functionHandlers } from "../tools/functionHandlers";
+import { FunctionContext } from "../types";
 import { config } from "../config";
 import { logger } from "../utils/logger";
 
@@ -73,11 +74,17 @@ export async function handleChatStream(
 
       // Process each function call
       for (const functionCall of functionCalls) {
-        const handler = functionHandlers[functionCall.name];
+        if (!functionCall.name) {
+          logger.warn(`Function call missing name:`, functionCall);
+          continue;
+        }
+        
+        const handler = functionHandlers[functionCall.name as keyof typeof functionHandlers];
         
         if (handler) {
           try {
-            const result = await handler(functionCall.args, functionContext);
+            const args = (functionCall.args || {}) as any;
+            const result = await handler(args, functionContext);
             
             // Check if this is rich content
             if (result && result.__isRichContent) {

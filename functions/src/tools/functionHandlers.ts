@@ -4,8 +4,8 @@ import { getProductsFromApi } from "../services/productService";
 import { submitContactForm, submitQuoteRequest } from "../services/formService";
 import { searchKnowledgeBase } from "../services/knowledgeService";
 import { FunctionCallArgs, FunctionContext, RichContent } from "../types";
-import { config } from "../config";
 import { logger } from "../utils/logger";
+import { validateEmail, validateRichContent } from "../utils/validators";
 
 export type FunctionHandler = <K extends keyof FunctionCallArgs>(
   args: FunctionCallArgs[K],
