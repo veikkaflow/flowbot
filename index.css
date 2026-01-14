@@ -472,7 +472,7 @@ body {
 
 .theme-dark {
     --admin-bg: #141414;
-    --admin-header-bg: rgba(31, 41, 55, 0.8);
+    --admin-header-bg: #1f2937;
     --admin-sidebar-bg: #1f2937;
     --admin-card-bg: #1f2937;
     --admin-border: #374151;
@@ -505,7 +505,7 @@ body {
 
 .theme-light {
     --admin-bg: #f9fafb;
-    --admin-header-bg: rgba(255, 255, 255, 0.8);
+    --admin-header-bg: #ffffff;
     --admin-sidebar-bg: #ffffff;
     --admin-card-bg: #ffffff;
     --admin-border: #e5e7eb;

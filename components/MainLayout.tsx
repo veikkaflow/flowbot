@@ -66,6 +66,10 @@ const MainLayout: React.FC<MainLayoutProps> = ({ onLogout, isAdmin = false }) =>
         '--color-primary': activeBot.settings.appearance.primaryColor,
     } as React.CSSProperties : {} as React.CSSProperties;
 
+    const headerStyle = activeBot?.settings.appearance.headerColor 
+        ? { backgroundColor: activeBot.settings.appearance.headerColor }
+        : { backgroundColor: 'var(--admin-header-bg, #1f2937)' };
+
     return (
         <div className="flex flex-col h-screen relative" style={{ 
             backgroundColor: 'var(--admin-bg, #141414)',
@@ -74,7 +78,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ onLogout, isAdmin = false }) =>
         }}>
             <BackgroundAnimation animation={activeBot?.settings.appearance.backgroundAnimation} />
             <header className="flex-shrink-0 flex items-center justify-between p-4 backdrop-blur-sm border-b z-30 gap-4" style={{
-                backgroundColor: 'var(--admin-header-bg, rgba(31, 41, 55, 0.8))',
+                ...headerStyle,
                 borderColor: 'var(--admin-border, #374151)'
             }}>
                 <div className="flex items-center gap-4">

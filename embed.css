@@ -1,5 +1,4 @@
 /* FlowBot Embed Widget Styles */
-/* Simple, clean CSS for embedded widget */
 
 /* ============================================
    BASIC ANIMATIONS
@@ -39,24 +38,35 @@
 /* ============================================
    BACKGROUND ANIMATIONS
    ============================================ */
-.animation-container {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    z-index: 0;
-    pointer-events: none;
+.flowbot-widget-container .animation-container {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    overflow: hidden !important;
+    z-index: 0 !important;
+    pointer-events: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    transform: none !important;
+    transform-origin: 0 0 !important;
 }
 
 /* Aurora Circles */
-.aurora-shape {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(100px);
-    opacity: var(--animation-opacity, 0.3);
-    animation: aurora-bg 40s infinite linear;
+.flowbot-widget-container .aurora-shape {
+    position: absolute !important;
+    border-radius: 50% !important;
+    filter: blur(100px) !important;
+    opacity: var(--animation-opacity, 0.3) !important;
+    animation: aurora-bg 40s infinite linear !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
 }
 
 @keyframes aurora-bg {
@@ -68,28 +78,31 @@
 }
 
 /* Light Waves */
-.wave {
-    background: radial-gradient(circle at 50% 50%, var(--animation-color-1), transparent 70%);
-    position: absolute;
-    border-radius: 45%;
-    animation: wave-effect 15s infinite ease-in-out;
-    opacity: var(--animation-opacity, 0.1);
+.flowbot-widget-container .wave {
+    background: radial-gradient(circle at 50% 50%, var(--animation-color-1), transparent 70%) !important;
+    position: absolute !important;
+    border-radius: 45% !important;
+    animation: wave-effect 15s infinite ease-in-out !important;
+    opacity: var(--animation-opacity, 0.1) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
 }
 
-.wave-1 {
-    width: 400px;
-    height: 400px;
-    top: -150px;
-    left: -100px;
-    animation-delay: 0s;
+.flowbot-widget-container .wave-1 {
+    width: 400px !important;
+    height: 400px !important;
+    top: -150px !important;
+    left: -100px !important;
+    animation-delay: 0s !important;
 }
 
-.wave-2 {
-    width: 500px;
-    height: 500px;
-    bottom: -200px;
-    right: -150px;
-    animation-delay: -5s;
+.flowbot-widget-container .wave-2 {
+    width: 500px !important;
+    height: 500px !important;
+    bottom: -200px !important;
+    right: -150px !important;
+    animation-delay: -5s !important;
 }
 
 @keyframes wave-effect {
@@ -99,38 +112,41 @@
 }
 
 /* Geometric Shapes */
-.geometric-shape {
-    position: absolute;
-    background-color: var(--animation-color-1);
-    opacity: 0;
-    animation: float-geometric 20s infinite linear;
+.flowbot-widget-container .geometric-shape {
+    position: absolute !important;
+    background-color: var(--animation-color-1) !important;
+    opacity: 0 !important;
+    animation: float-geometric 20s infinite linear !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
 }
 
-.shape-1 {
-    width: 80px;
-    height: 80px;
-    top: 10%;
-    left: 15%;
-    border-radius: 50%;
-    animation-delay: 0s;
+.flowbot-widget-container .shape-1 {
+    width: 80px !important;
+    height: 80px !important;
+    top: 10% !important;
+    left: 15% !important;
+    border-radius: 50% !important;
+    animation-delay: 0s !important;
 }
 
-.shape-2 {
-    width: 120px;
-    height: 120px;
-    top: 70%;
-    left: 80%;
-    border-radius: 10%;
-    animation-delay: 5s;
+.flowbot-widget-container .shape-2 {
+    width: 120px !important;
+    height: 120px !important;
+    top: 70% !important;
+    left: 80% !important;
+    border-radius: 10% !important;
+    animation-delay: 5s !important;
 }
 
-.shape-3 {
-    width: 50px;
-    height: 50px;
-    top: 40%;
-    left: 50%;
-    animation-delay: 10s;
-    transform: rotate(45deg);
+.flowbot-widget-container .shape-3 {
+    width: 50px !important;
+    height: 50px !important;
+    top: 40% !important;
+    left: 50% !important;
+    animation-delay: 10s !important;
+    transform: rotate(45deg) !important;
 }
 
 @keyframes float-geometric {
@@ -142,11 +158,19 @@
 }
 
 /* Shifting Gradient */
-.shifting-gradient-container {
-    background: linear-gradient(-45deg, var(--animation-color-1), var(--animation-color-2), var(--animation-color-3), var(--animation-color-4));
-    background-size: 400% 400%;
-    animation: gradient-shift 15s ease infinite;
-    opacity: var(--animation-opacity, 0.3);
+.flowbot-widget-container .shifting-gradient-container {
+    background: linear-gradient(-45deg, var(--animation-color-1), var(--animation-color-2), var(--animation-color-3), var(--animation-color-4)) !important;
+    background-size: 400% 400% !important;
+    animation: gradient-shift 15s ease infinite !important;
+    opacity: var(--animation-opacity, 0.3) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
 }
 
 @keyframes gradient-shift {
@@ -156,14 +180,17 @@
 }
 
 /* Particles */
-.particle {
-    position: absolute;
-    width: 4px;
-    height: 4px;
-    background: var(--animation-color-1);
-    border-radius: 50%;
-    opacity: var(--animation-opacity, 0.4);
-    animation: particle-float 20s infinite linear;
+.flowbot-widget-container .particle {
+    position: absolute !important;
+    width: 4px !important;
+    height: 4px !important;
+    background: var(--animation-color-1) !important;
+    border-radius: 50% !important;
+    opacity: var(--animation-opacity, 0.4) !important;
+    animation: particle-float 20s infinite linear !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
 }
 
 @keyframes particle-float {
@@ -174,36 +201,39 @@
 }
 
 /* Pulse */
-.pulse-ring {
-    position: absolute;
-    border: 2px solid var(--animation-color-1);
-    border-radius: 50%;
-    opacity: 0;
-    animation: pulse-expand 4s ease-out infinite;
+.flowbot-widget-container .pulse-ring {
+    position: absolute !important;
+    border: 2px solid var(--animation-color-1) !important;
+    border-radius: 50% !important;
+    opacity: 0 !important;
+    animation: pulse-expand 4s ease-out infinite !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
 }
 
-.pulse-ring-1 {
-    width: 200px;
-    height: 200px;
-    top: 30%;
-    left: 30%;
-    animation-delay: 0s;
+.flowbot-widget-container .pulse-ring-1 {
+    width: 200px !important;
+    height: 200px !important;
+    top: 30% !important;
+    left: 30% !important;
+    animation-delay: 0s !important;
 }
 
-.pulse-ring-2 {
-    width: 300px;
-    height: 300px;
-    top: 50%;
-    left: 50%;
-    animation-delay: -1.5s;
+.flowbot-widget-container .pulse-ring-2 {
+    width: 300px !important;
+    height: 300px !important;
+    top: 50% !important;
+    left: 50% !important;
+    animation-delay: -1.5s !important;
 }
 
-.pulse-ring-3 {
-    width: 150px;
-    height: 150px;
-    top: 70%;
-    left: 20%;
-    animation-delay: -3s;
+.flowbot-widget-container .pulse-ring-3 {
+    width: 150px !important;
+    height: 150px !important;
+    top: 70% !important;
+    left: 20% !important;
+    animation-delay: -3s !important;
 }
 
 @keyframes pulse-expand {
@@ -212,16 +242,19 @@
 }
 
 /* Mesh */
-.mesh-grid {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: linear-gradient(var(--animation-color-1) 1px, transparent 1px), linear-gradient(90deg, var(--animation-color-1) 1px, transparent 1px);
-    background-size: 50px 50px;
-    opacity: var(--animation-opacity, 0.1);
-    animation: mesh-shift 20s linear infinite;
+.flowbot-widget-container .mesh-grid {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background-image: linear-gradient(var(--animation-color-1) 1px, transparent 1px), linear-gradient(90deg, var(--animation-color-1) 1px, transparent 1px) !important;
+    background-size: 50px 50px !important;
+    opacity: var(--animation-opacity, 0.1) !important;
+    animation: mesh-shift 20s linear infinite !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
 }
 
 @keyframes mesh-shift {
@@ -230,39 +263,42 @@
 }
 
 /* Fire Animation */
-.fire-flame {
-    position: absolute;
-    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-    opacity: var(--animation-opacity, 0.6);
-    animation: fire-flicker 3s ease-in-out infinite;
-    filter: blur(20px);
+.flowbot-widget-container .fire-flame {
+    position: absolute !important;
+    border-radius: 50% 50% 50% 50% / 60% 60% 40% 40% !important;
+    opacity: var(--animation-opacity, 0.6) !important;
+    animation: fire-flicker 3s ease-in-out infinite !important;
+    filter: blur(20px) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
 }
 
-.fire-flame-1 {
-    width: 120px;
-    height: 150px;
-    bottom: -50px;
-    left: 15%;
-    background: radial-gradient(ellipse at bottom, var(--fire-color-1, #ff6b35), var(--fire-color-2, #f7931e) 40%, transparent 70%);
-    animation-delay: 0s;
+.flowbot-widget-container .fire-flame-1 {
+    width: 120px !important;
+    height: 150px !important;
+    bottom: -50px !important;
+    left: 15% !important;
+    background: radial-gradient(ellipse at bottom, var(--fire-color-1, #ff6b35), var(--fire-color-2, #f7931e) 40%, transparent 70%) !important;
+    animation-delay: 0s !important;
 }
 
-.fire-flame-2 {
-    width: 100px;
-    height: 130px;
-    bottom: -40px;
-    left: 45%;
-    background: radial-gradient(ellipse at bottom, var(--fire-color-2, #f7931e), var(--fire-color-3, #ffcc02) 40%, transparent 70%);
-    animation-delay: -1s;
+.flowbot-widget-container .fire-flame-2 {
+    width: 100px !important;
+    height: 130px !important;
+    bottom: -40px !important;
+    left: 45% !important;
+    background: radial-gradient(ellipse at bottom, var(--fire-color-2, #f7931e), var(--fire-color-3, #ffcc02) 40%, transparent 70%) !important;
+    animation-delay: -1s !important;
 }
 
-.fire-flame-3 {
-    width: 110px;
-    height: 140px;
-    bottom: -45px;
-    right: 20%;
-    background: radial-gradient(ellipse at bottom, var(--fire-color-1, #ff6b35), var(--fire-color-2, #f7931e) 40%, transparent 70%);
-    animation-delay: -2s;
+.flowbot-widget-container .fire-flame-3 {
+    width: 110px !important;
+    height: 140px !important;
+    bottom: -45px !important;
+    right: 20% !important;
+    background: radial-gradient(ellipse at bottom, var(--fire-color-1, #ff6b35), var(--fire-color-2, #f7931e) 40%, transparent 70%) !important;
+    animation-delay: -2s !important;
 }
 
 @keyframes fire-flicker {
@@ -294,16 +330,27 @@
     width: 0 !important;
     height: 0 !important;
     overflow: visible !important;
+    pointer-events: none !important;
     z-index: 9999 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    transform: none !important;
+    box-sizing: border-box !important;
+    float: none !important;
+    clear: none !important;
+    display: block !important;
 }
 
-/* ============================================
-   WIDGET CONTAINER ISOLATION & RESET
-   ============================================ */
+.flowbot-widget-container {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+}
 
 /* Container isolation - prevents host site styles from affecting widget */
 .flowbot-widget-container.flowbot-widget-container {
-    /* CSS Isolation - creates new stacking context */
     isolation: isolate !important;
     contain: layout style paint !important;
     
@@ -372,75 +419,42 @@
     animation: none !important;
 }
 
-/* Reset common HTML elements - Maximum specificity to override host site !important styles */
-.flowbot-widget-container.flowbot-widget-container.flowbot-widget-container h1,
-.flowbot-widget-container.flowbot-widget-container.flowbot-widget-container h2,
-.flowbot-widget-container.flowbot-widget-container.flowbot-widget-container h3,
-.flowbot-widget-container.flowbot-widget-container.flowbot-widget-container h4,
-.flowbot-widget-container.flowbot-widget-container.flowbot-widget-container h5,
-.flowbot-widget-container.flowbot-widget-container.flowbot-widget-container h6 {
-    font-size: inherit !important;
-    font-weight: inherit !important;
-    margin: 0 !important;
-    margin-top: 0 !important;
-    margin-right: 0 !important;
-    margin-bottom: 0 !important;
-    margin-left: 0 !important;
-    padding: 0 !important;
-    padding-top: 0 !important;
-    padding-right: 0 !important;
-    padding-bottom: 0 !important;
-    padding-left: 0 !important;
-    line-height: inherit !important;
+/* Allow animations for animation elements */
+.flowbot-widget-container .animation-container,
+.flowbot-widget-container .animation-container * {
+    animation: unset !important;
+    transform: unset !important;
+    filter: unset !important;
+    opacity: unset !important;
 }
 
-/* Maximum specificity for p element to override host site margin-bottom !important */
-.flowbot-widget-container.flowbot-widget-container.flowbot-widget-container p,
-.flowbot-widget-container.flowbot-widget-container p.flowbot-widget-container,
-p.flowbot-widget-container.flowbot-widget-container {
-    margin: 0 !important;
-    margin-top: 0 !important;
-    margin-right: 0 !important;
-    margin-bottom: 0 !important;
-    margin-left: 0 !important;
-    padding: 0 !important;
-    padding-top: 0 !important;
-    padding-right: 0 !important;
-    padding-bottom: 0 !important;
-    padding-left: 0 !important;
-}
-
-.flowbot-widget-container.flowbot-widget-container span,
-.flowbot-widget-container.flowbot-widget-container div,
-.flowbot-widget-container.flowbot-widget-container a {
-    margin: 0 !important;
-    margin-top: 0 !important;
-    margin-right: 0 !important;
-    margin-bottom: 0 !important;
-    margin-left: 0 !important;
-    padding: 0 !important;
-    padding-top: 0 !important;
-    padding-right: 0 !important;
-    padding-bottom: 0 !important;
-    padding-left: 0 !important;
-    text-decoration: none !important;
-}
-
-.flowbot-widget-container.flowbot-widget-container li,
-.flowbot-widget-container.flowbot-widget-container ul,
-.flowbot-widget-container.flowbot-widget-container ol {
-    margin: 0 !important;
-    margin-top: 0 !important;
-    margin-right: 0 !important;
-    margin-bottom: 0 !important;
-    margin-left: 0 !important;
-    padding: 0 !important;
-    padding-top: 0 !important;
-    padding-right: 0 !important;
-    padding-bottom: 0 !important;
-    padding-left: 0 !important;
-    list-style: none !important;
-    text-decoration: none !important;
+.flowbot-widget-container .aurora-shape,
+.flowbot-widget-container .wave,
+.flowbot-widget-container .wave-1,
+.flowbot-widget-container .wave-2,
+.flowbot-widget-container .geometric-shape,
+.flowbot-widget-container .shape-1,
+.flowbot-widget-container .shape-2,
+.flowbot-widget-container .shape-3,
+.flowbot-widget-container .shifting-gradient-container,
+.flowbot-widget-container .particle,
+.flowbot-widget-container .pulse-ring,
+.flowbot-widget-container .pulse-ring-1,
+.flowbot-widget-container .pulse-ring-2,
+.flowbot-widget-container .pulse-ring-3,
+.flowbot-widget-container .mesh-grid,
+.flowbot-widget-container .fire-flame,
+.flowbot-widget-container .fire-flame-1,
+.flowbot-widget-container .fire-flame-2,
+.flowbot-widget-container .fire-flame-3 {
+    animation-name: unset !important;
+    animation-duration: unset !important;
+    animation-timing-function: unset !important;
+    animation-delay: unset !important;
+    animation-iteration-count: unset !important;
+    animation-direction: unset !important;
+    animation-fill-mode: unset !important;
+    animation-play-state: unset !important;
 }
 
 /* Reset form elements */
@@ -452,16 +466,19 @@ p.flowbot-widget-container.flowbot-widget-container {
     -webkit-appearance: none !important;
     -moz-appearance: none !important;
     background: transparent !important;
+    background-color: transparent !important;
     border: none !important;
     outline: none !important;
-    margin: 0 !important;
-    padding: 0 !important;
     font-family: inherit !important;
     font-size: inherit !important;
     line-height: inherit !important;
+    font-weight: inherit !important;
     color: inherit !important;
     box-shadow: none !important;
     text-shadow: none !important;
+    text-align: left !important;
+    text-decoration: none !important;
+    text-transform: none !important;
 }
 
 /* Reset images */
@@ -472,170 +489,24 @@ p.flowbot-widget-container.flowbot-widget-container {
     display: block !important;
 }
 
-/* Widget Isolation */
-#flowbot-widget-isolated {
-    /* Reset inherited properties */
-    margin: 0 !important;
-    padding: 0 !important;
-    border: none !important;
-    background: transparent !important;
-    text-align: left !important;
-    text-decoration: none !important;
-    text-transform: none !important;
-    letter-spacing: normal !important;
-    word-spacing: normal !important;
-    direction: ltr !important;
-    white-space: normal !important;
-    word-wrap: normal !important;
-    transform: none !important;
-    filter: none !important;
-    backdrop-filter: none !important;
-    
-    /* Essential positioning */
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    overflow: visible !important;
-    pointer-events: none !important;
-    z-index: 9999 !important;
-    
-    /* Layout */
-    box-sizing: border-box !important;
-    display: block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    isolation: isolate !important;
-    
-    /* Font defaults */
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif !important;
-    font-size: 16px !important;
-    line-height: 1.5 !important;
-    font-weight: normal !important;
-    font-style: normal !important;
-    color: inherit !important;
-}
-
-/* Child elements */
-#flowbot-widget-isolated *,
-#flowbot-widget-isolated *::before,
-#flowbot-widget-isolated *::after {
-    box-sizing: border-box !important;
-}
-
-/* Form elements */
-#flowbot-widget-isolated input,
-#flowbot-widget-isolated textarea,
-#flowbot-widget-isolated select,
-#flowbot-widget-isolated button {
-    appearance: none !important;
-    -webkit-appearance: none !important;
-    -moz-appearance: none !important;
-}
-
-/* Images */
-#flowbot-widget-isolated img {
-    max-width: 100% !important;
-    height: auto !important;
+/* Ensure relative positioning for animation container */
+.flowbot-widget-container [class*="relative"]:has(.animation-container),
+.flowbot-widget-container [style*="position: relative"]:has(.animation-container),
+.flowbot-widget-container [style*="position:relative"]:has(.animation-container),
+.flowbot-widget-container .relative {
+    position: relative !important;
 }
 
 /* ============================================
    CSS VARIABLES - THEMES
+   Embed-spesifiset CSS-variablit (sama kuin index.css, mutta embedissä tarvitaan erikseen)
    ============================================ */
-#flowbot-widget-isolated.theme-dark {
-    --color-primary: #3b82f6;
-    --color-primary-light: #60a5fa;
-    --admin-bg: #141414;
-    --admin-header-bg: rgba(31, 41, 55, 0.8);
-    --admin-sidebar-bg: #1f2937;
-    --admin-card-bg: #1f2937;
-    --admin-border: #374151;
-    --admin-text-primary: #f3f4f6;
-    --admin-text-secondary: #d1d5db;
-    --admin-text-muted: #9ca3af;
-    --admin-dropdown-bg: #1f2937;
-    --admin-dropdown-hover: #374151;
-    --admin-dropdown-selected: #374151;
-    --admin-toggle-bg: #4b5563;
-    --admin-toggle-checked: var(--color-primary);
-    --chat-bg: rgba(23, 23, 33, 1);
-    --chat-header-bg: rgba(30, 30, 42, 0.5);
-    --chat-footer-bg: rgba(30, 30, 42, 0.5);
-    --chat-input-bg: rgba(55, 55, 75, 0.7);
-    --chat-button-bg: rgba(55, 55, 75, 0.5);
-    --chat-border-color: rgba(255, 255, 255, 0.1);
-    --chat-text-primary: #f3f4f6;
-    --chat-text-secondary: #d1d5db;
-    --chat-text-muted: #9ca3af;
-    --chat-bubble-bot-bg: rgba(45, 45, 60, 1);
-    --chat-bubble-user-text: #ffffff;
-    --chat-header-text: #f3f4f6;
-    --animation-opacity: 0.5;
-    --animation-color-1: var(--color-primary);
-    --animation-color-2: var(--color-primary-light);
-    --animation-color-3: #23a6d5;
-    --animation-color-4: #23d5ab;
-    --fire-color-1: #ff6b35;
-    --fire-color-2: #f7931e;
-    --fire-color-3: #ffcc02;
-}
-
-#flowbot-widget-isolated.theme-light {
-    --color-primary: #3b82f6;
-    --color-primary-light: #60a5fa;
-    --admin-bg: #f9fafb;
-    --admin-header-bg: rgba(255, 255, 255, 0.8);
-    --admin-sidebar-bg: #ffffff;
-    --admin-card-bg: #ffffff;
-    --admin-border: #e5e7eb;
-    --admin-text-primary: #000000;
-    --admin-text-secondary: #1f2937;
-    --admin-text-muted: #374151;
-    --admin-dropdown-bg: #ffffff;
-    --admin-dropdown-hover: #f3f4f6;
-    --admin-dropdown-selected: #e5e7eb;
-    --admin-toggle-bg: #d1d5db;
-    --admin-toggle-checked: var(--color-primary);
-    --chat-bg: #ffffff;
-    --chat-header-bg: var(--color-primary);
-    --chat-footer-bg: #f9fafb;
-    --chat-input-bg: #f3f4f6;
-    --chat-button-bg: #e5e7eb;
-    --chat-border-color: #e5e7eb;
-    --chat-text-primary: #111827;
-    --chat-text-secondary: #4b5563;
-    --chat-text-muted: #6b7280;
-    --chat-bubble-bot-bg: #f3f4f6;
-    --chat-bubble-user-text: #ffffff;
-    --chat-header-text: #ffffff;
-    --animation-opacity: 0.2;
-    --animation-color-1: var(--color-primary);
-    --animation-color-2: var(--color-primary-light);
-    --animation-color-3: #a0c4ff;
-    --animation-color-4: #bde0fe;
-}
-
-/* ============================================
-   WIDGET CONTAINER STYLES (.flowbot-widget-container)
-   ============================================ */
-
-/* Scoped CSS variables for embedded widget container */
-/* These ensure CSS variables are properly scoped and not affected by host site CSS */
 .flowbot-widget-container.theme-dark {
+    /* Primary colors */
     --color-primary: #3b82f6;
     --color-primary-light: #60a5fa;
-    --admin-bg: #141414;
-    --admin-header-bg: rgba(31, 41, 55, 0.8);
-    --admin-sidebar-bg: #1f2937;
-    --admin-card-bg: #1f2937;
-    --admin-border: #374151;
-    --admin-text-primary: #f3f4f6;
-    --admin-text-secondary: #d1d5db;
-    --admin-text-muted: #9ca3af;
-    --admin-dropdown-bg: #1f2937;
-    --admin-dropdown-hover: #374151;
-    --admin-dropdown-selected: #374151;
-    --admin-toggle-bg: #4b5563;
-    --admin-toggle-checked: var(--color-primary);
+    
+    /* Chat colors */
     --chat-bg: rgba(23, 23, 33, 0.8);
     --chat-header-bg: rgba(30, 30, 42, 0.5);
     --chat-footer-bg: rgba(30, 30, 42, 0.5);
@@ -648,6 +519,8 @@ p.flowbot-widget-container.flowbot-widget-container {
     --chat-bubble-bot-bg: rgba(45, 45, 60, 0.9);
     --chat-bubble-user-text: #ffffff;
     --chat-header-text: #f3f4f6;
+    
+    /* Animation colors */
     --animation-opacity: 0.5;
     --animation-color-1: var(--color-primary);
     --animation-color-2: var(--color-primary-light);
@@ -655,80 +528,17 @@ p.flowbot-widget-container.flowbot-widget-container {
     --animation-color-4: #23d5ab;
 }
 
-/* Force white text colors in dark mode for embedded widgets */
-/* Base color for all text in dark mode widget */
+/* Dark mode text colors - JavaScript hoitaa pääasialliset värit, tämä on varalla varmistukseksi */
 .flowbot-widget-container.theme-dark {
-    color: #f3f4f6 !important;
-}
-
-/* Inherit color for all child elements by default */
-.flowbot-widget-container.theme-dark * {
-    color: inherit;
-}
-
-/* Override text colors to ensure visibility in dark mode */
-.flowbot-widget-container.theme-dark h1,
-.flowbot-widget-container.theme-dark h2,
-.flowbot-widget-container.theme-dark h3,
-.flowbot-widget-container.theme-dark h4,
-.flowbot-widget-container.theme-dark h5,
-.flowbot-widget-container.theme-dark h6,
-.flowbot-widget-container.theme-dark p,
-.flowbot-widget-container.theme-dark span,
-.flowbot-widget-container.theme-dark div:not([class*="bg-"]):not([style*="background"]),
-.flowbot-widget-container.theme-dark label {
-    color: #f3f4f6 !important;
-}
-
-/* Target Tailwind utility classes with CSS variables */
-.flowbot-widget-container.theme-dark [class*="text-[var(--chat-text-primary)"] {
-    color: #f3f4f6 !important;
-}
-
-/* Secondary text should be lighter gray but still visible */
-.flowbot-widget-container.theme-dark [class*="text-[var(--chat-text-secondary)"] {
-    color: #d1d5db !important;
-}
-
-/* Muted text should be visible but softer */
-.flowbot-widget-container.theme-dark [class*="text-[var(--chat-text-muted)"] {
-    color: #9ca3af !important;
-}
-
-/* Ensure input and textarea text is white in dark mode */
-.flowbot-widget-container.theme-dark input[type="text"],
-.flowbot-widget-container.theme-dark input[type="email"],
-.flowbot-widget-container.theme-dark textarea {
-    color: #f3f4f6 !important;
-}
-
-.flowbot-widget-container.theme-dark input::placeholder,
-.flowbot-widget-container.theme-dark textarea::placeholder {
-    color: #9ca3af !important;
-    opacity: 1;
-}
-
-/* Ensure button text is visible */
-.flowbot-widget-container.theme-dark button:not([style*="background"]):not([class*="bg-"]) {
-    color: #f3f4f6 !important;
+    color: var(--chat-text-primary) !important;
 }
 
 .flowbot-widget-container.theme-light {
+    /* Primary colors */
     --color-primary: #3b82f6;
     --color-primary-light: #60a5fa;
-    --admin-bg: #f9fafb;
-    --admin-header-bg: rgba(255, 255, 255, 0.8);
-    --admin-sidebar-bg: #ffffff;
-    --admin-card-bg: #ffffff;
-    --admin-border: #e5e7eb;
-    --admin-text-primary: #000000;
-    --admin-text-secondary: #1f2937;
-    --admin-text-muted: #374151;
-    --admin-dropdown-bg: #ffffff;
-    --admin-dropdown-hover: #f3f4f6;
-    --admin-dropdown-selected: #e5e7eb;
-    --admin-toggle-bg: #d1d5db;
-    --admin-toggle-checked: var(--color-primary);
+    
+    /* Chat colors */
     --chat-bg: #ffffff;
     --chat-header-bg: var(--color-primary);
     --chat-footer-bg: #f9fafb;
@@ -741,6 +551,8 @@ p.flowbot-widget-container.flowbot-widget-container {
     --chat-bubble-bot-bg: #f3f4f6;
     --chat-bubble-user-text: #ffffff;
     --chat-header-text: #ffffff;
+    
+    /* Animation colors */
     --animation-opacity: 0.2;
     --animation-color-1: var(--color-primary);
     --animation-color-2: var(--color-primary-light);
@@ -748,4 +560,84 @@ p.flowbot-widget-container.flowbot-widget-container {
     --animation-color-4: #bde0fe;
 }
 
-/* Compact UI: Base font size is already set in container reset above */
+/* ============================================
+   YLIAJA ISÄNTÄSIVUN TYYLIT
+   JavaScript hoitaa h1-h6 ja p-elementtien margin-tyylit inline-tyyleillä !important-flagilla
+   Tämä CSS on varalla varmistukseksi
+   ============================================ */
+
+/* Yleinen yliajaus h1-h6 ja p-elementeille - varalla varmistukseksi */
+.flowbot-widget-container h1,
+.flowbot-widget-container h2,
+.flowbot-widget-container h3,
+.flowbot-widget-container h4,
+.flowbot-widget-container h5,
+.flowbot-widget-container h6,
+.flowbot-widget-container .h1,
+.flowbot-widget-container .h2,
+.flowbot-widget-container .h3,
+.flowbot-widget-container .h4,
+.flowbot-widget-container .h5,
+.flowbot-widget-container .h6,
+.flowbot-widget-container p,
+[data-flowbot-id] h1,
+[data-flowbot-id] h2,
+[data-flowbot-id] h3,
+[data-flowbot-id] h4,
+[data-flowbot-id] h5,
+[data-flowbot-id] h6,
+[data-flowbot-id] .h1,
+[data-flowbot-id] .h2,
+[data-flowbot-id] .h3,
+[data-flowbot-id] .h4,
+[data-flowbot-id] .h5,
+[data-flowbot-id] .h6,
+[data-flowbot-id] p {
+    margin-bottom: 0 !important;
+    margin: 0 !important;
+}
+
+/* ============================================
+   YLIAJA ISÄNTÄSIVUN VÄRIT
+   JavaScript hoitaa pääasialliset värit inline-tyyleillä !important-flagilla
+   Tämä CSS on varalla varmistukseksi
+   ============================================ */
+
+/* Chat header - käytä CSS-variablia */
+.flowbot-widget-container header *,
+[data-flowbot-id] header * {
+    color: var(--chat-header-text) !important;
+}
+
+/* Chat-viestit - käytä CSS-variablia */
+.flowbot-widget-container [class*="prose"],
+.flowbot-widget-container [class*="prose"] *,
+[data-flowbot-id] [class*="prose"],
+[data-flowbot-id] [class*="prose"] * {
+    color: var(--chat-text-primary) !important;
+}
+
+/* ============================================
+   TEXT-CURRENT YLIAJAUS
+   JavaScript hoitaa pääasialliset värit inline-tyyleillä !important-flagilla
+   Tämä CSS on varalla varmistukseksi
+   ============================================ */
+
+/* Vahvista text-current käyttää oikeaa väriä - käytä CSS-variablia */
+.flowbot-widget-container.theme-dark .text-current,
+.flowbot-widget-container.theme-dark [class*="text-current"],
+.flowbot-widget-container.theme-dark [class*="text-current"] *,
+[data-flowbot-id].theme-dark .text-current,
+[data-flowbot-id].theme-dark [class*="text-current"],
+[data-flowbot-id].theme-dark [class*="text-current"] * {
+    color: var(--chat-text-primary) !important;
+}
+
+.flowbot-widget-container.theme-light .text-current,
+.flowbot-widget-container.theme-light [class*="text-current"],
+.flowbot-widget-container.theme-light [class*="text-current"] *,
+[data-flowbot-id].theme-light .text-current,
+[data-flowbot-id].theme-light [class*="text-current"],
+[data-flowbot-id].theme-light [class*="text-current"] * {
+    color: var(--chat-text-primary) !important;
+}

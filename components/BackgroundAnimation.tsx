@@ -37,7 +37,19 @@ const BackgroundAnimation: React.FC<BackgroundAnimationProps> = ({ animation }) 
     }
 
     return (
-        <div className="animation-container" style={animationContainerStyle}>
+        <div 
+            className="animation-container" 
+            style={{
+                ...animationContainerStyle,
+                position: 'absolute', // Vahvistaa inline-tyylillä
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                zIndex: 0,
+                pointerEvents: 'none',
+            }}
+        >
             {animation === 'aurora' && (
                 <>
                     <div className="aurora-shape" style={{ width: '400px', height: '400px', top: '10%', left: '10%', background: 'var(--animation-color-1)' }}></div>

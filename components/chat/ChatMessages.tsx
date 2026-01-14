@@ -15,6 +15,7 @@ interface ChatMessagesProps {
   quickReplies?: QuickReply[];
   showQuickReplies: boolean;
   onQuickReply: (text: string) => void;
+  themeMode?: 'dark' | 'light';
 }
 
 export const ChatMessages: React.FC<ChatMessagesProps> = ({
@@ -25,6 +26,7 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
   quickReplies,
   showQuickReplies,
   onQuickReply,
+  themeMode,
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -33,7 +35,19 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
   }, [messages]);
 
   return (
-    <div className="flex-1 overflow-y-auto p-4 space-y-2 min-h-0">
+    <div 
+      className="flex-1 overflow-y-auto p-4 space-y-2 min-h-0"
+      style={{
+        flex: '1 1 0%',
+        overflowY: 'auto',
+        padding: '1rem',
+        minHeight: 0,
+        margin: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.5rem',
+      }}
+    >
       {messages.map((msg, index) => {
         const prevMsg = messages[index - 1];
         const showDateSeparator = !prevMsg || !isSameDay(new Date(msg.timestamp), new Date(prevMsg.timestamp));
@@ -52,6 +66,7 @@ export const ChatMessages: React.FC<ChatMessagesProps> = ({
               perspective="customer"
               language={botLanguage}
               agentAvatar={messageAgent?.avatar}
+              themeMode={themeMode}
             />
           </React.Fragment>
         );

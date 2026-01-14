@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { ChevronsUpDown, ArrowDown, Cog } from '../Icons.tsx';
 import { ChatSettingsMenu } from './ChatSettingsMenu.tsx';
+import { useHostStyleOverride } from '../../hooks/useHostStyleOverride.ts';
 
 interface ChatHeaderProps {
   brandName: string;
@@ -41,21 +42,40 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   changeNameText,
   themeMode,
 }) => {
+  // Ref for the header container to apply styles to h1-h6 and p elements
+  const headerRef = useRef<HTMLElement>(null);
+
+  // Apply !important styles to override host site CSS
+  useHostStyleOverride(
+    [headerRef],
+    [brandName, isOnline, themeMode],
+    { isHeader: true, themeMode }
+  );
+
   return (
-    <header className="flex-shrink-0 p-2 flex items-center justify-between text-[var(--chat-header-text)]" style={{ backgroundColor: 'var(--header-bg)' }}>
-      <div className="flex items-center gap-2">
+    <header 
+      ref={headerRef}
+      className="flex-shrink-0 p-2 flex items-center justify-between text-[var(--chat-header-text)] bg-[var(--chat-header-bg)] m-0 border-none box-border" 
+      style={{ 
+        backgroundColor: 'var(--chat-header-bg)',
+      }}
+    >
+      <div className="flex items-center gap-2 m-0 p-0">
         <img 
           src={botAvatar} 
           alt="bot" 
-          className="w-8 h-8 rounded-full flex-shrink-0" 
-          style={{ width: '32px', height: '32px', objectFit: 'cover' }}
+          className="w-8 h-8 rounded-full flex-shrink-0 object-cover block m-0 p-0 border-none" 
         />
-        <div>
-          <h3 className="font-bold text-sm">{brandName}</h3>
-          <p className="text-xs opacity-80">{isOnline ? onlineText : offlineText}</p>
+        <div className="m-0 p-0">
+          <h3 className="font-bold text-sm m-0 p-0 leading-normal text-inherit">
+            {brandName}
+          </h3>
+          <p className="text-xs opacity-80 m-0 mt-0.5 p-0 leading-normal text-inherit">
+            {isOnline ? onlineText : offlineText}
+          </p>
         </div>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 m-0 p-0">
         <button onClick={onToggleSize} title="Vaihda kokoa" className="p-1 text-current/80 hover:text-current">
           <ChevronsUpDown className="w-4 h-4"/>
         </button>
@@ -73,8 +93,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         <button 
           onClick={onClose} 
           title="Pienennä" 
-          className="p-1 text-[var(--chat-header-text)]/80 hover:text-[var(--chat-header-text)] transition-colors"
-          style={{ color: 'inherit', zIndex: 10 }}
+          className="p-1 text-[var(--chat-header-text)]/80 hover:text-[var(--chat-header-text)] transition-colors relative z-10"
         >
           <ArrowDown className="w-4 h-4"/>
         </button>

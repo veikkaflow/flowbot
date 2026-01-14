@@ -1,6 +1,6 @@
 
 // components/MessageBubble.tsx
-import React from 'react';
+import React, { useRef } from 'react';
 import { Message, AvatarSettings } from '../types.ts';
 import { formatTime } from '../utils/time.ts';
 import Markdown from 'react-markdown';
@@ -9,6 +9,7 @@ import { Language } from '../data/translations.ts';
 import { PersonCard } from './PersonCard.tsx';
 import { ProductCard } from './ProductCard.tsx';
 import { convertTextToMarkdownLinks } from '../utils/textParser.tsx';
+import { useHostStyleOverride } from '../hooks/useHostStyleOverride.ts';
 
 interface MessageBubbleProps {
     message: Message;
@@ -17,6 +18,7 @@ interface MessageBubbleProps {
     senderName?: string;
     language?: Language;
     agentAvatar?: string;
+    themeMode?: 'dark' | 'light';
 }
 
 const TypingIndicator: React.FC = () => (
@@ -27,7 +29,7 @@ const TypingIndicator: React.FC = () => (
     </div>
 );
 
-export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, avatars, perspective, senderName, agentAvatar, language: propLanguage }) => {
+export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, avatars, perspective, senderName, agentAvatar, language: propLanguage, themeMode }) => {
     const isUser = message.sender === 'user';
     const isBot = message.sender === 'bot';
     const isAgent = message.sender === 'agent';
@@ -43,12 +45,23 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, avatars, 
 
     const getBubbleColor = () => {
         if (perspective === 'customer') {
-            return isUser ? 'bg-[var(--color-primary)] text-[var(--chat-bubble-user-text)]' : 'bg-[var(--chat-bubble-bot-bg)] text-[var(--chat-text-primary)]';
+            return isUser ? 'bg-[var(--color-primary)] text-[var(--chat-bubble-user-text)]' : 'text-[var(--chat-text-primary)]';
         }
         // Agent perspective
         if (isUser) return 'bg-gray-700 text-white';
         if (isAgent) return 'bg-blue-600 text-white';
         return 'bg-purple-800 text-white'; // Bot
+    };
+
+    const getBubbleStyle = () => {
+        if (perspective === 'customer' && !isUser) {
+            // Bot message in customer perspective - use CSS variable
+            // This prevents host site CSS from affecting the color
+            return {
+                backgroundColor: 'var(--chat-bubble-bot-bg)',
+            };
+        }
+        return undefined;
     };
 
     const getAvatar = () => {
@@ -83,21 +96,31 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, avatars, 
     // Use full width for rich content messages, otherwise use constrained width
     const maxWidthClass = hasRichContent ? 'w-full' : 'max-w-xs md:max-w-md lg:max-w-lg';
 
+    // Refs for containers to apply styles to p elements
+    const bubbleRef = useRef<HTMLDivElement>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+
+    // Apply !important styles to override host site CSS
+    useHostStyleOverride(
+        [bubbleRef, containerRef],
+        [message.text, message.richContent, message.ctaLink, themeMode],
+        { themeMode }
+    );
+
     return (
         <div className={`flex items-end gap-3 ${alignment}`}>
             {showAvatar && (
                  <img 
                      src={avatarSrc} 
                      alt="avatar" 
-                     className="w-8 h-8 rounded-full flex-shrink-0" 
-                     style={{ width: '32px', height: '32px', objectFit: 'cover', flexShrink: 0 }}
+                     className="w-8 h-8 rounded-full flex-shrink-0 object-cover"
                  />
             )}
             
             {/* Spacer to align bubbles correctly when avatar is not shown */}
             {!showAvatar && <div className="w-8 flex-shrink-0" />}
 
-            <div className={maxWidthClass}>
+            <div ref={containerRef} className={maxWidthClass}>
                 {showSenderName && (
                     <p className={`text-xs text-gray-400 mb-1 ${isAlignedRight ? 'text-right' : 'text-left'}`}>
                         {senderName}
@@ -137,7 +160,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, avatars, 
                 
                 {/* Viestin teksti jos se on olemassa */}
                 {message.text && (
-                    <div className={`px-4 py-2.5 rounded-2xl ${bubbleColor} ${isAlignedRight ? 'rounded-br-lg' : 'rounded-bl-lg'}`}>
+                    <div 
+                        ref={bubbleRef}
+                        className={`px-4 py-2.5 rounded-2xl ${bubbleColor} ${isAlignedRight ? 'rounded-br-lg' : 'rounded-bl-lg'}`}
+                        style={getBubbleStyle()}
+                    >
                         <div className="prose prose-sm text-current break-words">
                             {message.isStreaming && !message.text ? (
                                  <TypingIndicator />

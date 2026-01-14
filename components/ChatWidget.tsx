@@ -189,7 +189,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ visitorId }) => {
     const colorVars = {
         '--color-primary': appearance.primaryColor,
         '--color-primary-light': `${appearance.primaryColor}B3`,
-        '--header-bg': appearance.headerColor,
+        '--chat-header-bg': appearance.headerColor,
     } as React.CSSProperties;
 
     // Determine the theme class based on settings (defaulting to light if undefined)
@@ -235,6 +235,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ visitorId }) => {
                     <div 
                         className="w-full h-full bg-[var(--chat-bg)] rounded-2xl flex flex-col overflow-hidden border border-[var(--chat-border-color)] relative"
                         style={{
+                            position: 'relative', // Vahvistaa position relative inline-tyylillä
                             opacity: 1,
                             backgroundColor: isEmbedded 
                                 ? (appearance.themeMode === 'dark' ? 'rgba(23, 23, 33, 1)' : '#ffffff')
@@ -251,7 +252,19 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ visitorId }) => {
                     >
                         <BackgroundAnimation animation={appearance.backgroundAnimation} />
                         
-                        <div className="relative z-10 flex flex-col flex-1 h-full">
+                        <div 
+                            className="relative z-10 flex flex-col flex-1 h-full"
+                            style={{
+                                position: 'relative',
+                                zIndex: 10,
+                                display: 'flex',
+                                flexDirection: 'column',
+                                flex: '1 1 0%',
+                                height: '100%',
+                                margin: 0,
+                                padding: 0,
+                            }}
+                        >
                             <ChatHeader
                                 brandName={appearance.brandName}
                                 botAvatar={activeBot.settings.avatarSettings.selectedBotAvatar}
@@ -272,11 +285,61 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ visitorId }) => {
                                 themeMode={appearance.themeMode}
                             />
 
-                            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                            <div 
+                                className="flex-1 flex flex-col min-h-0 overflow-hidden"
+                                style={{
+                                    flex: '1 1 0%',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    minHeight: 0,
+                                    overflow: 'hidden',
+                                    margin: 0,
+                                    padding: 0,
+                                }}
+                            >
                                 {isAgentsOnlyOffline ? (
-                                    <div className="p-4 text-center h-full flex flex-col justify-center items-center overflow-y-auto">
-                                        <h3 className="text-lg font-semibold text-[var(--chat-text-primary)]">{tBot('chat.away')}</h3>
-                                        <p className="text-sm text-[var(--chat-text-secondary)] mt-2">{activeBot.settings.schedule.offlineMessage}</p>
+                                    <div 
+                                        className="p-4 text-center h-full flex flex-col justify-center items-center overflow-y-auto"
+                                        style={{
+                                            padding: '1rem',
+                                            textAlign: 'center',
+                                            height: '100%',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            overflowY: 'auto',
+                                            margin: 0,
+                                        }}
+                                    >
+                                        <h3 
+                                            className="text-lg font-semibold text-[var(--chat-text-primary)]"
+                                            style={{
+                                                fontSize: '1.125rem',
+                                                fontWeight: 600,
+                                                color: 'var(--chat-text-primary)',
+                                                margin: 0,
+                                                padding: 0,
+                                                lineHeight: '1.5',
+                                            }}
+                                        >
+                                            {tBot('chat.away')}
+                                        </h3>
+                                        <p 
+                                            className="text-sm text-[var(--chat-text-secondary)] mt-2"
+                                            style={{
+                                                fontSize: '0.875rem',
+                                                color: 'var(--chat-text-secondary)',
+                                                marginTop: '0.5rem',
+                                                marginBottom: 0,
+                                                marginLeft: 0,
+                                                marginRight: 0,
+                                                padding: 0,
+                                                lineHeight: '1.5',
+                                            }}
+                                        >
+                                            {activeBot.settings.schedule.offlineMessage}
+                                        </p>
                                     </div>
                                 ) : activeView !== 'chat' ? (
                                     <ChatViewSwitcher
@@ -305,6 +368,7 @@ const ChatWidget: React.FC<ChatWidgetProps> = ({ visitorId }) => {
                                             quickReplies={personality.quickReplies}
                                             showQuickReplies={messages.length <= 1}
                                             onQuickReply={handleQuickReply}
+                                            themeMode={appearance.themeMode}
                                         />
                                         <ChatInput
                                             input={input}
