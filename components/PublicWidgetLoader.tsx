@@ -100,6 +100,7 @@ const PublicWidgetLoader: React.FC<PublicWidgetLoaderProps> = ({ botId }) => {
     // Apply primary color variable for the widget
     const style = {
         '--color-primary': bot.settings.appearance.primaryColor,
+        '--chat-header-bg': bot.settings.appearance.headerColor,
     } as React.CSSProperties;
 
     // Determine the theme class based on settings (defaulting to light if undefined)

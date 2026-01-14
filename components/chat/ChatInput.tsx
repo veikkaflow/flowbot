@@ -31,10 +31,32 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   onShowQuote,
 }) => {
   return (
-    <div className="flex-shrink-0 p-3 bg-[var(--chat-footer-bg)] border-t border-[var(--chat-border-color)]">
+    <div 
+      className="flex-shrink-0 p-3 bg-[var(--chat-footer-bg)] border-t border-[var(--chat-border-color)]"
+      style={{
+        flexShrink: 0,
+        padding: '0.75rem',
+        backgroundColor: 'var(--chat-footer-bg)',
+        borderTop: '1px solid var(--chat-border-color)',
+        margin: 0,
+        boxSizing: 'border-box',
+      }}
+    >
       {/* Contact & Quote buttons are always visible if enabled */}
       {(showContactButton || showQuoteButton) && (
-        <div className="flex flex-wrap gap-2 mb-2">
+        <div 
+          className="flex flex-wrap gap-2 mb-2"
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '0.5rem',
+            marginBottom: '0.5rem',
+            marginTop: 0,
+            marginLeft: 0,
+            marginRight: 0,
+            padding: 0,
+          }}
+        >
           {showContactButton && (
             <button 
               onClick={onShowContact} 
@@ -55,7 +77,17 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           )}
         </div>
       )}
-      <form onSubmit={onSubmit} className="flex items-center gap-2">
+      <form 
+        onSubmit={onSubmit} 
+        className="flex items-center gap-2"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          margin: 0,
+          padding: 0,
+        }}
+      >
         <input
           type="text"
           value={input}
@@ -63,6 +95,22 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           placeholder={placeholder}
           disabled={disabled}
           className="w-full text-sm px-4 py-2 bg-[var(--chat-input-bg)] text-[var(--chat-text-primary)] border border-[var(--chat-border-color)] rounded-full focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] placeholder-[var(--chat-text-muted)]"
+          style={{
+            width: '100%',
+            fontSize: '0.875rem',
+            paddingLeft: '1rem',
+            paddingRight: '1rem',
+            paddingTop: '0.5rem',
+            paddingBottom: '0.5rem',
+            backgroundColor: 'var(--chat-input-bg)',
+            color: 'var(--chat-text-primary)',
+            border: '1px solid var(--chat-border-color)',
+            borderRadius: '9999px',
+            margin: 0,
+            boxSizing: 'border-box',
+            fontFamily: 'inherit',
+            lineHeight: 'inherit',
+          }}
         />
         <button 
           type="submit" 
