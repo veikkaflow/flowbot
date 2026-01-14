@@ -9,7 +9,7 @@ export type IconName =
   | 'Calendar' | 'X' | 'PlusSquare' | 'Loader' | 'RefreshCcw' | 'ArrowLeft' 
   | 'ArrowDown' | 'UploadCloud' | 'FileText' | 'Edit2' | 'AlertTriangle' 
   | 'Info' | 'Archive' | 'Zap' | 'Lock' | 'Briefcase' | 'Image' | 'BrandLogo'
-  | 'List'; // Added List icon
+  | 'List' | 'Phone' | 'WhatsApp'; // Added List, Phone, and WhatsApp icons
 
 // General
 export type Sender = 'user' | 'bot' | 'agent' | 'system';
@@ -28,12 +28,18 @@ export interface Message {
     isStreaming?: boolean;
     agentId?: string; // Agent ID for agent messages, to identify which agent sent the message
     ctaLink?: CTALink;
+    richContent?: RichContent[]; // Rich content cards (person cards, product cards, etc.)
 }
 export interface CTALink {
     text: string;
     url: string;
     description?: string;
 }
+
+// Rich Content types
+export type RichContent = 
+    | { type: 'personCard'; name: string; avatar?: string; email?: string; phone?: string; whatsapp?: string }
+    | { type: 'productCard'; title: string; image?: string; url: string; description?: string };
 
 export interface Submission {
     id: string;
@@ -128,6 +134,7 @@ export interface BehaviorSettings {
     showQuoteButton: boolean;
     language: 'fi' | 'en'; // Added Bot Language Setting
     helpText?: string; // Custom help text that users can write
+    richContentEnabled?: boolean; // Enable rich content responses (person cards, product cards, etc.)
 }
 
 export interface DailySchedule {

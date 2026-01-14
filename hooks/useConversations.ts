@@ -1,8 +1,9 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Conversation, Message, Sender, Submission } from '../types.ts';
+import { Conversation, Message, Sender, Submission, RichContent } from '../types.ts';
 import { useBotContext } from '../context/BotContext.tsx';
 import { generateId } from '../utils/id.ts';
+import { SIMULATION_PREFIXES } from '../constants/index.ts';
 import { db } from '../services/firebase.ts';
 import {
     collection,
@@ -22,8 +23,8 @@ import { translateText } from '@/services/geminiService.ts';
 import { useLanguage } from '@/context/LanguageContext.tsx';
 
 
-const isSimulationVisitorId = (id: string) => id.startsWith('sim_');
-const isSimulationConversationId = (id: string) => id.startsWith('sim_conv_');
+const isSimulationVisitorId = (id: string) => id.startsWith(SIMULATION_PREFIXES.VISITOR);
+const isSimulationConversationId = (id: string) => id.startsWith(SIMULATION_PREFIXES.CONVERSATION);
 
 export const useConversations = () => {
     const { activeBot } = useBotContext();
@@ -37,6 +38,8 @@ export const useConversations = () => {
     useEffect(() => {
         if (!activeBot) {
             setFirestoreConversations([]);
+            // Clear simulation conversations when bot changes
+            setSimulationConversations([]);
             return;
         }
         
@@ -54,8 +57,12 @@ export const useConversations = () => {
     }, [activeBot]);
 
     const conversations = useMemo(() => {
-        return [...firestoreConversations, ...simulationConversations];
-    }, [firestoreConversations, simulationConversations]);
+        // Filter simulation conversations by activeBot.id
+        const filteredSimulations = activeBot 
+            ? simulationConversations.filter(c => c.botId === activeBot.id)
+            : [];
+        return [...firestoreConversations, ...filteredSimulations];
+    }, [firestoreConversations, simulationConversations, activeBot]);
 
     const activeConversation = useMemo(() => {
         return conversations.find(c => c.id === activeConversationId) || null;
@@ -91,12 +98,17 @@ export const useConversations = () => {
         }
 
         if (isSimulationVisitorId(visitorId)) {
-            const existingSim = simulationConversations.find(c => c.visitorId === visitorId && !c.isEnded);
+            // Tarkista myös botId kun etsitään olemassa olevaa simulaatiokeskustelua
+            const existingSim = simulationConversations.find(
+                c => c.visitorId === visitorId && 
+                     c.botId === activeBot.id && 
+                     !c.isEnded
+            );
             if (existingSim) return existingSim;
 
             const openingMessage = getOpeningMessageText();
             const newSimConversation: Conversation = {
-                id: `sim_conv_${generateId()}`,
+                id: `${SIMULATION_PREFIXES.CONVERSATION}${generateId()}`,
                 botId: activeBot.id,
                 visitorId: visitorId,
                 visitorName: `Vierailija ${Math.floor(Math.random() * 900) + 100}`,
@@ -167,12 +179,17 @@ export const useConversations = () => {
 
         if (isSimulationVisitorId(visitorId)) {
             let targetConversationId: string;
-            const existingSim = simulationConversations.find(c => c.visitorId === visitorId && !c.isEnded);
+            // Tarkista myös botId kun etsitään olemassa olevaa simulaatiokeskustelua
+            const existingSim = simulationConversations.find(
+                c => c.visitorId === visitorId && 
+                     c.botId === activeBot.id && 
+                     !c.isEnded
+            );
             
             if (existingSim) {
                 targetConversationId = existingSim.id;
             } else {
-                targetConversationId = `sim_conv_${generateId()}`;
+                targetConversationId = `${SIMULATION_PREFIXES.CONVERSATION}${generateId()}`;
             }
 
             // Translate opening message if needed (before setState)
@@ -186,7 +203,12 @@ export const useConversations = () => {
             }
 
             setSimulationConversations(prev => {
-                const existing = prev.find(c => c.visitorId === visitorId && !c.isEnded);
+                // Tarkista myös botId kun etsitään olemassa olevaa simulaatiokeskustelua
+                const existing = prev.find(
+                    c => c.visitorId === visitorId && 
+                         c.botId === activeBot.id && 
+                         !c.isEnded
+                );
                 
                 if (existing) {
                     return prev.map(conv => 
@@ -230,13 +252,13 @@ export const useConversations = () => {
         return conversation.id;
     }, [activeBot, getOrCreateConversation, simulationConversations, getOpeningMessageText, adminLanguage]);
 
-    const updateMessageContent = useCallback(async (conversationId: string, messageId: string, newContent: string) => {
+    const updateMessageContent = useCallback(async (conversationId: string, messageId: string, newContent: string, richContent?: RichContent[]) => {
         if (isSimulationConversationId(conversationId)) {
              setSimulationConversations(prev => prev.map(c => {
                 if (c.id === conversationId) {
                     const updatedMessages = c.messages.map(msg => 
                         msg.id === messageId 
-                            ? { ...msg, text: newContent } 
+                            ? { ...msg, text: newContent, richContent } 
                             : msg
                     );
                     return { ...c, messages: updatedMessages };
@@ -252,11 +274,17 @@ export const useConversations = () => {
             
             if (convDoc.exists()) {
                 const latestMessages = convDoc.data().messages;
-                const updatedMessages = latestMessages.map(msg => 
-                    msg.id === messageId 
-                        ? { ...msg, text: newContent } 
-                        : msg
-                );
+                const updatedMessages = latestMessages.map(msg => {
+                    if (msg.id === messageId) {
+                        // Poista undefined-arvot ennen Firestore-päivitystä
+                        const updatedMsg: any = { ...msg, text: newContent };
+                        if (richContent !== undefined) {
+                            updatedMsg.richContent = richContent;
+                        }
+                        return updatedMsg;
+                    }
+                    return msg;
+                });
                 await updateDoc(convRef, { messages: updatedMessages });
             }
         } catch (e) {

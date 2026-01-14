@@ -6,6 +6,9 @@ import { formatTime } from '../utils/time.ts';
 import Markdown from 'react-markdown';
 import { useLanguage } from '../context/LanguageContext.tsx';
 import { Language } from '../data/translations.ts';
+import { PersonCard } from './PersonCard.tsx';
+import { ProductCard } from './ProductCard.tsx';
+import { convertTextToMarkdownLinks } from '../utils/textParser.tsx';
 
 interface MessageBubbleProps {
     message: Message;
@@ -75,6 +78,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, avatars, 
     // Show sender name only in agent perspective for bot or agent messages
     const showSenderName = perspective === 'agent' && senderName;
 
+    // Check if message has rich content
+    const hasRichContent = message.richContent && message.richContent.length > 0;
+    // Use full width for rich content messages, otherwise use constrained width
+    const maxWidthClass = hasRichContent ? 'w-full' : 'max-w-xs md:max-w-md lg:max-w-lg';
+
     return (
         <div className={`flex items-end gap-3 ${alignment}`}>
             {showAvatar && (
@@ -89,12 +97,44 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, avatars, 
             {/* Spacer to align bubbles correctly when avatar is not shown */}
             {!showAvatar && <div className="w-8 flex-shrink-0" />}
 
-            <div className="max-w-xs md:max-w-md lg:max-w-lg">
+            <div className={maxWidthClass}>
                 {showSenderName && (
                     <p className={`text-xs text-gray-400 mb-1 ${isAlignedRight ? 'text-right' : 'text-left'}`}>
                         {senderName}
                     </p>
                 )}
+                
+                {/* Rich Content Cards */}
+                {hasRichContent && (
+                    <div className="mb-2">
+                        {message.richContent!.map((content, index) => {
+                            if (content.type === 'personCard') {
+                                return (
+                                    <PersonCard
+                                        key={index}
+                                        name={content.name}
+                                        avatar={content.avatar}
+                                        email={content.email}
+                                        phone={content.phone}
+                                        whatsapp={content.whatsapp}
+                                    />
+                                );
+                            } else if (content.type === 'productCard') {
+                                return (
+                                    <ProductCard
+                                        key={index}
+                                        title={content.title}
+                                        image={content.image}
+                                        url={content.url}
+                                        description={content.description}
+                                    />
+                                );
+                            }
+                            return null;
+                        })}
+                    </div>
+                )}
+                
                 {/* Viestin teksti jos se on olemassa */}
                 {message.text && (
                     <div className={`px-4 py-2.5 rounded-2xl ${bubbleColor} ${isAlignedRight ? 'rounded-br-lg' : 'rounded-bl-lg'}`}>
@@ -102,7 +142,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({ message, avatars, 
                             {message.isStreaming && !message.text ? (
                                  <TypingIndicator />
                             ) : (
-                                <Markdown>{message.text}</Markdown>
+                                <Markdown>{convertTextToMarkdownLinks(message.text)}</Markdown>
                             )}
                             {message.isStreaming && message.text && <span className="inline-block w-2 h-4 bg-current rounded-sm animate-pulse ml-1 align-bottom"></span>}
                         </div>

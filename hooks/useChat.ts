@@ -4,7 +4,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useConversationContext } from '../context/ConversationContext.tsx';
 import { useBotContext } from '../context/BotContext.tsx';
 import { getChatResponseStream } from '../services/geminiService.ts';
-import { Message, Conversation } from '../types.ts';
+import { Message, Conversation, RichContent } from '../types.ts';
 import { generateId } from '../utils/id.ts';
 
 export const useChat = (visitorId: string, conversation: Conversation | null) => {
@@ -98,6 +98,7 @@ export const useChat = (visitorId: string, conversation: Conversation | null) =>
         try {
             const stream = getChatResponseStream(conversationForGemini, activeBot.settings);
             let fullResponse = '';
+            let richContent: RichContent[] | undefined = undefined;
             
             for await (const chunk of stream) {
                 // Normaali tekstichunk
@@ -106,12 +107,16 @@ export const useChat = (visitorId: string, conversation: Conversation | null) =>
                     setMessages(prev => prev.map(msg => 
                         msg.id === botPlaceholder.id ? { ...msg, text: fullResponse } : msg
                     ));
+                } else if (typeof chunk === 'object' && chunk !== null && 'richContent' in chunk) {
+                    // Rich content chunk
+                    richContent = chunk.richContent;
+                    fullResponse = chunk.text || fullResponse;
                 }
             }
 
             // Finalize the message in the local state immediately to remove the indicator.
             setMessages(prev => prev.map(msg => 
-                msg.id === botPlaceholder.id ? { ...msg, text: fullResponse, isStreaming: false } : msg
+                msg.id === botPlaceholder.id ? { ...msg, text: fullResponse, richContent, isStreaming: false } : msg
             ));
             setLastFinalizedMessageId(botPlaceholder.id);
             
@@ -120,7 +125,7 @@ export const useChat = (visitorId: string, conversation: Conversation | null) =>
             const targetId = conversationId || conversation?.id;
 
             if (targetId) {
-                await updateMessageContent(targetId, botPlaceholder.id, fullResponse);
+                await updateMessageContent(targetId, botPlaceholder.id, fullResponse, richContent);
                 await endStream(targetId, botPlaceholder.id);
             } 
 

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import BotSelector from './BotSelector.tsx';
 import TopLevelViewSwitcher, { LayoutView } from './TopLevelViewSwitcher.tsx';
 import AdminView from './AdminView.tsx';
@@ -45,6 +45,12 @@ const MainLayout: React.FC<MainLayoutProps> = ({ onLogout, isAdmin = false }) =>
     const handleSimulationSizeChange = (visitorId: string, size: 'normal' | 'large') => {
         setSimulationSizes(prev => ({ ...prev, [visitorId]: size }));
     };
+
+    // Tyhjennä simulations-lista kun bot vaihtuu
+    useEffect(() => {
+        setSimulations(['sim_visitor_main']); // Säilytetään oletussimulaatio
+        setSimulationSizes({});
+    }, [activeBot?.id]);
 
     // For non-admin users, activeBot is required
     if (!isAdmin && !activeBot) {

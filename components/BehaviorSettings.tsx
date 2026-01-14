@@ -188,6 +188,33 @@ const BehaviorSettings: React.FC = () => {
                 backgroundColor: 'var(--admin-card-bg, #1f2937)',
                 borderColor: 'var(--admin-border, #374151)'
             }}>
+                <div className="flex items-center justify-between py-4">
+                    <div>
+                        <h4 className="font-semibold" style={{ color: 'var(--admin-text-primary, #f3f4f6)' }}>Rich Content -vastaukset</h4>
+                        <p className="text-sm" style={{ color: 'var(--admin-text-secondary, #d1d5db)' }}>
+                            Ota käyttöön strukturoidut vastaukset, jotka sisältävät henkilökortit, tuotekortit ja automaattisesti linkitetyt yhteystiedot. Viestit käyttävät koko chatin leveyttä tehokkaasti.
+                        </p>
+                    </div>
+                    <label htmlFor="richContentEnabled" className="relative inline-flex items-center cursor-pointer">
+                        <input 
+                            type="checkbox" 
+                            id="richContentEnabled" 
+                            className="sr-only peer" 
+                            checked={behavior.richContentEnabled || false} 
+                            onChange={(e) => handleToggle('richContentEnabled', e.target.checked)} 
+                        />
+                        <div className="w-11 h-6 rounded-full peer peer-focus:ring-2 peer-focus:ring-[var(--color-primary)] peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border after:rounded-full after:h-5 after:w-5 after:transition-all" style={{
+                            backgroundColor: behavior.richContentEnabled ? 'var(--admin-toggle-checked, var(--color-primary))' : 'var(--admin-toggle-bg, #4b5563)',
+                            borderColor: 'var(--admin-border, #374151)'
+                        }}></div>
+                    </label>
+                </div>
+            </div>
+
+            <div className="p-6 rounded-lg border" style={{
+                backgroundColor: 'var(--admin-card-bg, #1f2937)',
+                borderColor: 'var(--admin-border, #374151)'
+            }}>
                 <h4 className="font-semibold mb-2" style={{ color: 'var(--admin-text-primary, #f3f4f6)' }}>Ohjeteksti</h4>
                 <p className="text-sm mb-4" style={{ color: 'var(--admin-text-secondary, #d1d5db)' }}>
                     Kirjoita ohjeteksti, joka näytetään käyttäjille ohjeet-näkymässä. Voit käyttää tätä kertomaan käyttäjille miten chattia käytetään.

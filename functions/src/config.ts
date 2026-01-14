@@ -80,6 +80,45 @@ export const config = {
           "- Älä odota että käyttäjä pyytää työkalun käyttöä eksplisiittisesti - tunnista tarve ja käytä työkalua",
         ],
       },
+      richContent: {
+        header: "\n=== RICH CONTENT -VASTAUKSET ===\n",
+        description: "Kun rich content -tuki on käytössä, voit käyttää strukturoituja vastauksia seuraavissa tilanteissa:\n\n",
+        personCard: {
+          header: "Henkilökortit - Käytä kun:\n",
+          rules: [
+            "- Käyttäjä kysyy henkilön yhteystietoja (sähköposti, puhelin, WhatsApp)",
+            "- Käyttäjä pyytää tietoja tietyistä henkilöistä tai asiakaspalvelijoista",
+            "- Haluat esittää henkilön tiedot selkeästi korttimuodossa",
+          ],
+          format: "Kun luot henkilökortin, käytä addRichContent-funktiota seuraavilla parametreilla:\n" +
+            "- type: \"personCard\"\n" +
+            "- name: Henkilön nimi (pakollinen)\n" +
+            "- avatar: URL kuvaan (valinnainen)\n" +
+            "- email: Sähköpostiosoite pelkkänä tekstinä (valinnainen)\n" +
+            "- phone: Puhelinnumero pelkkänä tekstinä (valinnainen)\n" +
+            "- whatsapp: WhatsApp-numero pelkkänä tekstinä (valinnainen)\n\n",
+        },
+        productCard: {
+          header: "Tuotekortit - Käytä kun:\n",
+          rules: [
+            "- Käyttäjä kysyy tietoja tuotteesta tai palvelusta",
+            "- Haluat esittää tuotteen tiedot selkeästi korttimuodossa",
+            "- Tuotteella on oma sivunsa johon voit linkittää",
+          ],
+          format: "Kun luot tuotekortin, käytä addRichContent-funktiota seuraavilla parametreilla:\n" +
+            "- type: \"productCard\"\n" +
+            "- title: Tuotteen nimi (pakollinen)\n" +
+            "- url: Tuotesivun URL (pakollinen)\n" +
+            "- image: URL tuotekuvaan (valinnainen)\n" +
+            "- description: Lyhyt kuvaus (valinnainen)\n\n",
+        },
+        important: "TÄRKEÄÄ:\n" +
+          "- Käytä addRichContent-funktiota rich content -korttien lisäämiseen\n" +
+          "- Älä kirjoita JSON-rakenteita tekstivastaukseen\n" +
+          "- Funktio lisää kortin automaattisesti viestiin\n" +
+          "- Rich content -kortit näytetään ennen tekstivastausta\n" +
+          "- Käytä pelkkää tekstiä parametreissa (ei Markdown-linkkejä)\n",
+      },
     },
     qna: {
       header: "Vastaa näihin kysymyksiin tarkasti seuraavasti:\n",

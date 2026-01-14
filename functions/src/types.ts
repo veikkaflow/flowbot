@@ -70,6 +70,7 @@ export interface BehaviorSettings {
     showQuoteButton: boolean;
     language: 'fi' | 'en';
     helpText?: string;
+    richContentEnabled?: boolean; // Enable rich content responses (person cards, product cards, etc.)
 }
 
 export interface AppearanceSettings {
@@ -102,3 +103,26 @@ export interface AnalysisResult {
     improvementSuggestions: string[];
 }
 
+// Rich Content types
+export type RichContent = 
+    | { type: 'personCard'; name: string; avatar?: string; email?: string; phone?: string; whatsapp?: string }
+    | { type: 'productCard'; title: string; image?: string; url: string; description?: string };
+
+// Function call argument types
+export interface FunctionCallArgs {
+    getProducts: { category?: string; searchTerm?: string };
+    submitContactForm: { name: string; email: string; message: string };
+    submitQuoteRequest: { name: string; email: string; company?: string; details: string };
+    searchKnowledgeBase: { query: string; maxResults?: number };
+    addRichContent: RichContent;
+}
+
+// Function context for handlers
+export interface FunctionContext {
+    conversationId: string;
+    botId: string;
+    visitorId: string;
+    visitorName: string;
+    maxResponseChars: number;
+    settings: AppSettings;
+}
